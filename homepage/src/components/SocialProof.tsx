@@ -1,15 +1,4 @@
-const quotes = [
-  {
-    quote:
-      "“Altair found a licensed attorney for me in under a day. The updates were clear and reassuring.”",
-    name: "Redwood City client, Susan",
-  },
-  {
-    quote:
-      "“I submitted one enquiry and got matched with a local provider fast—no back-and-forth.”",
-    name: "Palo Alto client, Miguel",
-  },
-];
+import { quotes } from "../data/homeContent";
 
 export default function SocialProof() {
   return (
