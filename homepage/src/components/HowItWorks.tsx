@@ -1,17 +1,4 @@
-const steps = [
-  {
-    title: "Tell us what you need",
-    description: "Share your postcode and a short request in minutes.",
-  },
-  {
-    title: "We verify and match",
-    description: "Altair checks availability and connects you to vetted providers.",
-  },
-  {
-    title: "Get updates fast",
-    description: "Receive clear status updates and next steps without chasing.",
-  },
-];
+import { steps } from "../data/homeContent";
 
 export default function HowItWorks() {
   return (

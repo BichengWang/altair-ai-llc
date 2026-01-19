@@ -1,20 +1,4 @@
-const faqs = [
-  {
-    question: "How much does it cost?",
-    answer:
-      "Altair is free to start. You only pay the provider for services you choose.",
-  },
-  {
-    question: "Is my information private?",
-    answer:
-      "Yes. We collect only what is needed to match you and keep it protected.",
-  },
-  {
-    question: "How fast will I hear back?",
-    answer:
-      "Most requests receive a response within 24 hours during business days.",
-  },
-];
+import { faqs } from "../data/homeContent";
 
 export default function Faq() {
   return (
