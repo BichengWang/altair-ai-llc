@@ -21,9 +21,9 @@ export default function Hero() {
               placeholder="Enter your postcode here"
               aria-label="Postcode"
             />
-            <button className="button" type="button">
+            <a className="button" href="/enquiry">
               Start an enquiry
-            </button>
+            </a>
           </div>
           <p className="hero-note">
             We currently only offer service in the San Francisco Bay Area.

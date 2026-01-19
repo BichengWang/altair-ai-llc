@@ -5,6 +5,7 @@ export const offers = [
       "Get matched with licensed attorneys through a structured intake that keeps you informed at every step.",
     tag: "LS",
     image: "/images/legal-services.jpg",
+    slug: "legal-services",
   },
   {
     title: "Pet Sitting Match",
@@ -12,6 +13,7 @@ export const offers = [
       "Find trusted sitters fast with clear availability checks and easy scheduling.",
     tag: "PS",
     image: "/images/pet-sitting.webp",
+    slug: "pet-sitting",
   },
   {
     title: "Local Car Rental Service",
@@ -19,6 +21,7 @@ export const offers = [
       "Confirm availability quickly and connect with local vehicle owners you can trust.",
     tag: "CR",
     image: "/images/financial-planning.jpg",
+    slug: "local-car-rental",
   },
   {
     title: "Everyday Financial Planning",
@@ -26,5 +29,6 @@ export const offers = [
       "Organize your goals and get access to regulated guidance delivered clearly and compliantly.",
     tag: "FP",
     image: "/images/local-car-rental.png",
+    slug: "financial-planning",
   },
 ];
