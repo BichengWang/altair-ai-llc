@@ -15,7 +15,7 @@ export default function Contact() {
             </div>
             <div className="contact-item">
               <span aria-hidden="true">📧</span>
-              <span>hello@altair.ai</span>
+              <span>qx@altair.ai</span>
             </div>
             <div className="contact-item">
               <span aria-hidden="true">🕒</span>
@@ -33,7 +33,7 @@ export default function Contact() {
             <input className="input" type="email" placeholder="name@email.com" />
           </label>
           <label>
-            Leave us a message
+            Send us what you need
             <textarea
               className="input textarea"
               placeholder="Tell us about the service you need..."

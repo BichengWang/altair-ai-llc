@@ -2,25 +2,29 @@ export const offers = [
   {
     title: "Legal Services Discovery",
     description:
-      "We provide tools that help users find and connect with licensed attorneys through structured, chat-based intake.",
+      "Get matched with licensed attorneys through a structured intake that keeps you informed at every step.",
     tag: "LS",
+    image: "/images/legal-services.jpg",
   },
   {
     title: "Pet Sitting Match",
     description:
-      "Find and connect with local dog and cat sitters and service providers, whenever and wherever you need it.",
+      "Find trusted sitters fast with clear availability checks and easy scheduling.",
     tag: "PS",
+    image: "/images/pet-sitting.webp",
   },
   {
     title: "Local Car Rental Service",
     description:
-      "Our platform assists users with rental inquiries and availability checks while connecting them with local rental providers.",
+      "Confirm availability quickly and connect with local vehicle owners you can trust.",
     tag: "CR",
+    image: "/images/financial-planning.jpg",
   },
   {
     title: "Everyday Financial Planning",
     description:
-      "We help users organize information, track tasks, and access regulated investment advisory services in compliance with applicable laws.",
+      "Organize your goals and get access to regulated guidance delivered clearly and compliantly.",
     tag: "FP",
+    image: "/images/local-car-rental.png",
   },
 ];

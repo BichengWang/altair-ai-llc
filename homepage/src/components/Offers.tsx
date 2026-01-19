@@ -4,18 +4,22 @@ export default function Offers() {
   return (
     <section>
       <div className="container">
-        <h2 className="section-title">What We Offer</h2>
+        <h2 className="section-title">What We Offer Now</h2>
         <p className="section-subtitle">
-          Finding local service near you is easy with Altair. Leave your email
-          address and postcode above, we’ll do all the work to get what you need
-          in your area.
+          We take your request, verify availability, and connect you with
+          trusted providers who can help right away.
         </p>
         <div className="offer-grid">
           {offers.map((offer) => (
             <article key={offer.title} className="offer-card">
-              <span className="offer-icon" aria-hidden="true">
-                {offer.tag}
-              </span>
+              <div className="offer-header">
+                <img
+                  className="offer-icon-image"
+                  src={offer.image}
+                  alt={offer.title}
+                  loading="lazy"
+                />
+              </div>
               <h3>{offer.title}</h3>
               <p>{offer.description}</p>
             </article>
