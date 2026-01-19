@@ -1,6 +1,15 @@
+import { FormEvent, useState } from "react";
+
 export default function Contact() {
+  const [sent, setSent] = useState(false);
+
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setSent(true);
+  };
+
   return (
-    <section>
+    <section id="contact">
       <div className="container contact-grid">
         <div>
           <h2 className="section-title">Contact</h2>
@@ -23,7 +32,7 @@ export default function Contact() {
             </div>
           </div>
         </div>
-        <form className="contact-card" onSubmit={(event) => event.preventDefault()}>
+        <form className="contact-card" onSubmit={handleSubmit}>
           <label>
             Name
             <input className="input" type="text" placeholder="Your name" />
@@ -42,6 +51,11 @@ export default function Contact() {
           <button className="button" type="submit">
             Send message
           </button>
+          {sent ? (
+            <p className="form-success">
+              Thanks! We received your message and will follow up soon.
+            </p>
+          ) : null}
         </form>
       </div>
     </section>

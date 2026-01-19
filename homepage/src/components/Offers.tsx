@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { offers } from "../data/offers";
 
 export default function Offers() {
@@ -22,6 +23,9 @@ export default function Offers() {
               </div>
               <h3>{offer.title}</h3>
               <p>{offer.description}</p>
+              <Link className="text-link" to={`/services/${offer.slug}`}>
+                Learn more
+              </Link>
             </article>
           ))}
         </div>

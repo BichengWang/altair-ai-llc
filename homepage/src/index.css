@@ -33,6 +33,34 @@ img {
   gap: 80px;
 }
 
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: rgba(246, 241, 235, 0.92);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(32, 28, 23, 0.08);
+}
+
+.nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 0;
+}
+
+.brand {
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.nav-links {
+  display: flex;
+  gap: 18px;
+  font-size: 0.95rem;
+}
+
 .container {
   width: min(1120px, 92vw);
   margin: 0 auto;
@@ -64,6 +92,63 @@ img {
   background-size: cover;
   background-position: center;
   color: #f7f2ed;
+}
+
+.page-section {
+  padding: 40px 0 20px;
+}
+
+.split-layout {
+  display: grid;
+  gap: 28px;
+  align-items: start;
+}
+
+@media (min-width: 960px) {
+  .split-layout {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+}
+
+.card-panel {
+  background: #fffaf4;
+  border-radius: 18px;
+  border: 1px solid rgba(32, 28, 23, 0.08);
+  padding: 24px;
+  display: grid;
+  gap: 16px;
+}
+
+.form-panel label {
+  display: grid;
+  gap: 8px;
+  font-weight: 600;
+  color: rgba(32, 28, 23, 0.78);
+}
+
+.bullet-list {
+  display: grid;
+  gap: 10px;
+  margin: 16px 0 24px;
+}
+
+.bullet-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+  color: rgba(32, 28, 23, 0.78);
+}
+
+.form-success {
+  margin: 8px 0 0;
+  font-size: 0.9rem;
+  color: rgba(32, 28, 23, 0.75);
+}
+
+.text-link {
+  font-weight: 600;
+  color: rgba(32, 28, 23, 0.8);
 }
 
 .hero::before {
