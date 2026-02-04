@@ -3,6 +3,7 @@ import Home from "./pages/Home";
 import Enquiry from "./pages/Enquiry";
 import ServiceDetail from "./pages/ServiceDetail";
 import Services from "./pages/Services";
+import ContactPage from "./pages/Contact";
 
 export default function App() {
   return (
@@ -15,7 +16,7 @@ export default function App() {
           <nav className="nav-links">
             <Link to="/services">Services</Link>
             <Link to="/enquiry">Enquiry</Link>
-            <a href="/#contact">Contact</a>
+            <Link to="/contact">Contact</Link>
           </nav>
         </div>
       </header>
@@ -25,6 +26,7 @@ export default function App() {
           <Route path="/services" element={<Services />} />
           <Route path="/services/:slug" element={<ServiceDetail />} />
           <Route path="/enquiry" element={<Enquiry />} />
+          <Route path="/contact" element={<ContactPage />} />
         </Routes>
       </main>
       <footer className="footer">
@@ -38,7 +40,7 @@ export default function App() {
           <div className="footer-links">
             <Link to="/services">Services</Link>
             <Link to="/enquiry">Enquiry</Link>
-            <a href="/#contact">Contact</a>
+            <Link to="/contact">Contact</Link>
           </div>
           <div>
             <p className="footer-meta">San Francisco Bay Area</p>
