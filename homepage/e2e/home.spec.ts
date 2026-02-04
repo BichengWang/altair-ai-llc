@@ -4,7 +4,7 @@ test("homepage renders and regenerates hero", async ({ page }) => {
   await page.goto("/");
 
   await expect(
-    page.getByRole("heading", { name: /local services platform powered with ai/i })
+    page.getByRole("heading", { name: /local services, matched by ai/i })
   ).toBeVisible();
 
   const hero = page.locator("[data-seed]");

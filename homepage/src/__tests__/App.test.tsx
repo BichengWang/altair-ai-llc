@@ -12,10 +12,16 @@ describe("Altair homepage", () => {
 
     expect(
       screen.getByRole("heading", {
-        name: /local services platform powered with ai/i,
+        name: /local services, matched by ai/i,
       })
     ).toBeInTheDocument();
-    expect(screen.getByText(/what we offer/i)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /start an enquiry/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", {
+        name: /services built for everyday needs/i,
+      })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: /start an enquiry/i })
+    ).toBeInTheDocument();
   });
 });

@@ -1,29 +1,45 @@
+import { CSSProperties } from "react";
 import { Link } from "react-router-dom";
-import { offers } from "../data/offers";
+import { services } from "../data/services";
 
 export default function Offers() {
   return (
-    <section>
+    <section className="section">
       <div className="container">
-        <h2 className="section-title">What We Offer Now</h2>
-        <p className="section-subtitle">
-          We take your request, verify availability, and connect you with
-          trusted providers who can help right away.
-        </p>
+        <div className="section-header">
+          <span className="pill">Services</span>
+          <h2 className="section-title">Services built for everyday needs</h2>
+          <p className="section-subtitle">
+            We take your request, verify availability, and connect you with
+            trusted providers who can help right away.
+          </p>
+        </div>
         <div className="offer-grid">
-          {offers.map((offer) => (
-            <article key={offer.title} className="offer-card">
+          {services.map((service, index) => (
+            <article
+              key={service.title}
+              className="offer-card"
+              style={{ "--i": index } as CSSProperties}
+            >
               <div className="offer-header">
                 <img
                   className="offer-icon-image"
-                  src={offer.image}
-                  alt={offer.title}
+                  src={service.image}
+                  alt={service.title}
                   loading="lazy"
                 />
+                <span className="offer-tag">{service.tag}</span>
               </div>
-              <h3>{offer.title}</h3>
-              <p>{offer.description}</p>
-              <Link className="text-link" to={`/services/${offer.slug}`}>
+              <h3>{service.title}</h3>
+              <p>{service.shortDescription}</p>
+              <div className="offer-highlights">
+                {service.highlights.slice(0, 2).map((highlight) => (
+                  <span key={highlight} className="chip">
+                    {highlight}
+                  </span>
+                ))}
+              </div>
+              <Link className="text-link" to={`/services/${service.slug}`}>
                 Learn more
               </Link>
             </article>
