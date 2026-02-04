@@ -1,5 +1,6 @@
 import { FormEvent, useState } from "react";
 import { Link } from "react-router-dom";
+import { services } from "../data/services";
 
 export default function Enquiry() {
   const [sent, setSent] = useState(false);
@@ -21,17 +22,28 @@ export default function Enquiry() {
           </p>
           <div className="bullet-list">
             <div className="bullet-item">
-              <span aria-hidden="true">✓</span>
+              <span aria-hidden="true">01</span>
               <span>Response within 24 hours</span>
             </div>
             <div className="bullet-item">
-              <span aria-hidden="true">✓</span>
+              <span aria-hidden="true">02</span>
               <span>Vetted providers only</span>
             </div>
             <div className="bullet-item">
-              <span aria-hidden="true">✓</span>
+              <span aria-hidden="true">03</span>
               <span>Privacy-first intake</span>
             </div>
+          </div>
+          <div className="card-panel">
+            <h3>What happens next</h3>
+            <p>
+              We review your request, confirm availability, and send back a
+              shortlist with clear next steps.
+            </p>
+            <p>
+              If you have a preferred provider or timeline, add it to the form
+              to speed up matching.
+            </p>
           </div>
         </div>
         <form className="card-panel form-panel" onSubmit={handleSubmit}>
@@ -48,7 +60,27 @@ export default function Enquiry() {
             <input className="input" type="text" required />
           </label>
           <label>
-            Send us what you need
+            Service needed
+            <select className="input" required>
+              <option value="">Select a service</option>
+              {services.map((service) => (
+                <option key={service.slug} value={service.slug}>
+                  {service.title}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Timeline
+            <select className="input" required>
+              <option value="">Choose a timeline</option>
+              <option value="24-hours">Within 24 hours</option>
+              <option value="week">Within a week</option>
+              <option value="flexible">Flexible</option>
+            </select>
+          </label>
+          <label>
+            Tell us what you need
             <textarea
               className="input textarea"
               placeholder="Share a few details..."
@@ -63,8 +95,8 @@ export default function Enquiry() {
               Thanks! We received your enquiry and will follow up soon.
             </p>
           ) : null}
-          <Link className="text-link" to="/">
-            Back to homepage
+          <Link className="text-link" to="/services">
+            Back to services
           </Link>
         </form>
       </div>
