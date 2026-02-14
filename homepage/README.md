@@ -28,5 +28,5 @@ Elegant, single-page marketing site for Altair's local services platform.
 
 ## Notes
 
-- The hero section includes a "Generate new image & elements" button that regenerates the background and decorative elements.
-- Replace the hero background with a real photo by swapping the styling in `src/components/Hero.tsx`.
+- The hero section uses a fixed background image at `public/images/background.png`.
+- You can adjust the overlay and image treatment in `src/index.css` (`.hero-surface`).

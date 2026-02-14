@@ -132,7 +132,12 @@ img {
 }
 
 .hero-surface {
-  background: var(--hero-gradient);
+  background:
+    linear-gradient(120deg, rgba(24, 20, 16, 0.74), rgba(24, 20, 16, 0.46)),
+    url("/images/background.png");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
   padding: 70px 0 90px;
   position: relative;
   overflow: hidden;
@@ -143,7 +148,7 @@ img {
   position: absolute;
   inset: 0;
   background: linear-gradient(180deg, rgba(12, 16, 22, 0.15), rgba(12, 16, 22, 0.4));
-  opacity: 0.8;
+  opacity: 0.55;
 }
 
 .hero-grid {

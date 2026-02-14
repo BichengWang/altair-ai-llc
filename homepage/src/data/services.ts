@@ -179,7 +179,7 @@ export const services: Service[] = [
       "We verify inventory, confirm pricing ranges, and connect you with local rental providers you can trust.",
     shortDescription:
       "Confirm availability quickly and connect with local rental providers with confidence.",
-    image: "/images/local-car-rental.png",
+    image: "/images/financial-planning.jpg",
     tag: "CR",
     highlights: [
       "Same-day availability checks",
@@ -248,7 +248,7 @@ export const services: Service[] = [
       "We capture your goals, organize key documents, and connect you with licensed advisors for compliant guidance.",
     shortDescription:
       "Organize goals and access regulated financial guidance with a clear, guided intake.",
-    image: "/images/financial-planning.jpg",
+    image: "/images/local-car-rental.png",
     tag: "FP",
     highlights: [
       "Goal-focused planning intake",
