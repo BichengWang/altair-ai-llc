@@ -41,7 +41,7 @@ export default function ContactPage() {
             </div>
             <div className="contact-item">
               <span className="contact-label">Email</span>
-              <span>qx@altair.ai</span>
+              <span>qx@altairworld.com</span>
             </div>
             <div className="contact-item">
               <span className="contact-label">Hours</span>
