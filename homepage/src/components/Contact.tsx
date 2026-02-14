@@ -9,26 +9,27 @@ export default function Contact() {
   };
 
   return (
-    <section id="contact">
+    <section id="contact" className="section">
       <div className="container contact-grid">
         <div>
-          <h2 className="section-title">Contact</h2>
+          <span className="pill">Contact</span>
+          <h2 className="section-title">Start with a quick message</h2>
           <p className="section-subtitle">
             Tell us what you need and we will help you connect with trusted
             local providers.
           </p>
           <div className="contact-card">
             <div className="contact-item">
-              <span aria-hidden="true">📍</span>
+              <span className="contact-label">Location</span>
               <span>San Francisco Bay Area</span>
             </div>
             <div className="contact-item">
-              <span aria-hidden="true">📧</span>
-              <span>qx@altair.ai</span>
+              <span className="contact-label">Email</span>
+              <span>qx@altairworld.com</span>
             </div>
             <div className="contact-item">
-              <span aria-hidden="true">🕒</span>
-              <span>Mon–Fri, 9am–6pm PST</span>
+              <span className="contact-label">Hours</span>
+              <span>Mon-Fri, 9am-6pm PST</span>
             </div>
           </div>
         </div>

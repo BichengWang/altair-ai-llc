@@ -1,8 +1,7 @@
 import { FormEvent, useState } from "react";
 import { Link } from "react-router-dom";
-import { services } from "../data/services";
 
-export default function Enquiry() {
+export default function ContactPage() {
   const [sent, setSent] = useState(false);
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
@@ -14,11 +13,11 @@ export default function Enquiry() {
     <section className="page-section">
       <div className="container split-layout">
         <div>
-          <span className="pill">Start an enquiry</span>
-          <h1 className="section-title">Tell us what you need</h1>
+          <span className="pill">Contact</span>
+          <h1 className="section-title">Talk with the Altair team</h1>
           <p className="section-subtitle">
-            Share a few details and we will match you with the right local
-            provider.
+            Share a quick note and we will respond with next steps within 24
+            hours.
           </p>
           <div className="bullet-list">
             <div className="bullet-item">
@@ -27,7 +26,7 @@ export default function Enquiry() {
             </div>
             <div className="bullet-item">
               <span aria-hidden="true">02</span>
-              <span>Vetted providers only</span>
+              <span>San Francisco Bay Area coverage</span>
             </div>
             <div className="bullet-item">
               <span aria-hidden="true">03</span>
@@ -35,15 +34,19 @@ export default function Enquiry() {
             </div>
           </div>
           <div className="card-panel">
-            <h3>What happens next</h3>
-            <p>
-              We review your request, confirm availability, and send back a
-              shortlist with clear next steps.
-            </p>
-            <p>
-              If you have a preferred provider or timeline, add it to the form
-              to speed up matching.
-            </p>
+            <h3>Contact details</h3>
+            <div className="contact-item">
+              <span className="contact-label">Location</span>
+              <span>San Francisco Bay Area</span>
+            </div>
+            <div className="contact-item">
+              <span className="contact-label">Email</span>
+              <span>qx@altairworld.com</span>
+            </div>
+            <div className="contact-item">
+              <span className="contact-label">Hours</span>
+              <span>Mon-Fri, 9am-6pm PST</span>
+            </div>
           </div>
         </div>
         <form className="card-panel form-panel" onSubmit={handleSubmit}>
@@ -56,43 +59,28 @@ export default function Enquiry() {
             <input className="input" type="email" required />
           </label>
           <label>
-            Postcode
-            <input className="input" type="text" required />
-          </label>
-          <label>
-            Service needed
+            Topic
             <select className="input" required>
-              <option value="">Select a service</option>
-              {services.map((service) => (
-                <option key={service.slug} value={service.slug}>
-                  {service.title}
-                </option>
-              ))}
+              <option value="">Select a topic</option>
+              <option value="services">Services enquiry</option>
+              <option value="partnerships">Provider partnership</option>
+              <option value="support">General support</option>
             </select>
           </label>
           <label>
-            Timeline
-            <select className="input" required>
-              <option value="">Choose a timeline</option>
-              <option value="24-hours">Within 24 hours</option>
-              <option value="week">Within a week</option>
-              <option value="flexible">Flexible</option>
-            </select>
-          </label>
-          <label>
-            Tell us what you need
+            Message
             <textarea
               className="input textarea"
-              placeholder="Share a few details..."
+              placeholder="Tell us how we can help..."
               required
             />
           </label>
           <button className="button" type="submit">
-            Submit enquiry
+            Send message
           </button>
           {sent ? (
             <p className="form-success">
-              Thanks! We received your enquiry and will follow up soon.
+              Thanks! We received your message and will follow up soon.
             </p>
           ) : null}
           <Link className="text-link" to="/services">
