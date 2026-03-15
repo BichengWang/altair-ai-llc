@@ -1352,20 +1352,6 @@ img {
   }
 }
 
-.review-selection-float {
-  position: absolute;
-  z-index: 3;
-  transform: translate(-50%, -100%);
-  pointer-events: none;
-}
-
-.review-selection-float .button {
-  pointer-events: auto;
-  padding-inline: 16px;
-  box-shadow: 0 18px 36px rgba(15, 18, 25, 0.2);
-}
-
-.review-context-panel,
 .review-chat-log-shell,
 .review-composer {
   display: grid;
@@ -1375,7 +1361,6 @@ img {
   background: rgba(255, 255, 255, 0.72);
 }
 
-.review-context-panel,
 .review-composer {
   padding: 14px;
 }
@@ -1414,12 +1399,23 @@ img {
   background: rgba(255, 255, 255, 0.92);
 }
 
+.review-context-attachment {
+  display: grid;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(27, 38, 54, 0.08);
+  background: rgba(243, 247, 253, 0.92);
+}
+
 .review-context-text {
   margin: 0;
   color: rgba(28, 27, 25, 0.82);
   white-space: pre-wrap;
   overflow: auto;
-  max-height: 8rem;
+  max-height: 6rem;
+  font-size: 0.94rem;
+  line-height: 1.45;
 }
 
 .review-chat-log-shell {
