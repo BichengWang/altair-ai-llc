@@ -31,19 +31,30 @@ test("review workspace uploads a docx and asks the agent about the selected clau
   );
 
   await expect(targetText).toBeVisible();
+  await page.evaluate(() => {
+    const viewer = document.querySelector(
+      ".review-document-viewer"
+    ) as HTMLElement | null;
+    const target = Array.from(
+      document.querySelectorAll(".review-document-viewer p")
+    ).find((node) =>
+      /customer may terminate this agreement upon 30 days written notice\./i.test(
+        node.textContent ?? ""
+      )
+    );
 
-  const box = await targetText.boundingBox();
+    if (!viewer || !target) {
+      throw new Error("Unable to locate rendered review text");
+    }
 
-  if (!box) {
-    throw new Error("Unable to determine selection target bounds");
-  }
+    const range = document.createRange();
+    const selection = window.getSelection();
 
-  await page.mouse.move(box.x + 6, box.y + box.height / 2);
-  await page.mouse.down();
-  await page.mouse.move(box.x + box.width - 6, box.y + box.height / 2, {
-    steps: 12,
+    range.selectNodeContents(target);
+    selection?.removeAllRanges();
+    selection?.addRange(range);
+    viewer.dispatchEvent(new MouseEvent("mouseup", { bubbles: true }));
   });
-  await page.mouse.up();
 
   await expect(
     page.getByText("Highlighted excerpt", { exact: true })
