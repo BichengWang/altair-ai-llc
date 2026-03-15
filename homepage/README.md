@@ -37,8 +37,10 @@ Elegant, single-page marketing site for Altair's local services platform.
    ```bash
    VITE_SUPABASE_URL=https://your-project-ref.supabase.co
    VITE_SUPABASE_PUBLISHABLE_KEY=your-publishable-key
+   VITE_AUTH_CALLBACK_URL=http://localhost:5173/auth/callback
    VITE_WORKSPACE_ORIGIN=https://llm.your-domain.example
    ```
+   `VITE_AUTH_CALLBACK_URL` is optional but recommended when your frontend is served through a reverse proxy or a non-default local port (for example `http://localhost:3000`) so OAuth always returns to a reachable callback URL.
    These `VITE_*` values are public client-side build variables. In GitHub Actions, store them as Environment variables rather than secrets because Vite includes them in the browser bundle.
 
 ## Workspace edge function setup
