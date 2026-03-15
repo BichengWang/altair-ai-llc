@@ -72,6 +72,15 @@ The workspace function exposes these routes under `workspace-api`:
 - Protected: `/account`
 - Workspace host: `/`, `/login`, `/register`, `/auth/callback`, `/chat`, `/keys`, `/usage`, `/account`
 
+## Review workspace
+
+- Visit `/review` to open the DOCX review workspace.
+- Visit `/review/settings` to store the provider connection used by the review workspace in this browser.
+- The chat uses an OpenAI-compatible endpoint by default: `https://api.openai.com/v1`.
+- Saved settings override fallback env vars. Supported env vars are `VITE_LLM_API_KEY`, `VITE_LLM_MODEL`, `VITE_LLM_BASE_URL`, plus `VITE_ANTHROPIC_API_KEY` and `VITE_ANTHROPIC_MODEL`.
+- The left panel uses a standard DOCX renderer; highlight text in the document to set chat context.
+- The chat currently sends only the highlighted excerpt, not the full document.
+
 ## Tests
 
 - Unit tests:
