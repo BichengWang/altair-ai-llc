@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { buildAppPath, buildWorkspaceUrl, detectActiveApp, getDefaultSignedInPath } from "../lib/runtime";
+import {
+  buildAppPath,
+  buildWorkspaceUrl,
+  detectActiveApp,
+  getAuthCallbackPathFromHash,
+  getDefaultSignedInPath,
+} from "../lib/runtime";
 
 describe("runtime host detection", () => {
   it("detects the workspace app from the llm subdomain", () => {
@@ -85,5 +91,29 @@ describe("runtime host detection", () => {
         },
       })
     ).toBe("/chat?app=workspace");
+  });
+
+  it("normalizes hash-only OAuth callbacks onto the auth callback route", () => {
+    expect(
+      getAuthCallbackPathFromHash({
+        hostname: "localhost",
+        origin: "http://localhost:3000",
+        pathname: "/",
+        search: "",
+        hash: "#access_token=test-access&refresh_token=test-refresh",
+      })
+    ).toBe("/auth/callback#access_token=test-access&refresh_token=test-refresh");
+  });
+
+  it("returns null when already on the callback route", () => {
+    expect(
+      getAuthCallbackPathFromHash({
+        hostname: "localhost",
+        origin: "http://localhost:3000",
+        pathname: "/auth/callback",
+        search: "",
+        hash: "#access_token=test-access&refresh_token=test-refresh",
+      })
+    ).toBeNull();
   });
 });
