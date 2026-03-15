@@ -4,6 +4,39 @@ import Enquiry from "./pages/Enquiry";
 import ServiceDetail from "./pages/ServiceDetail";
 import Services from "./pages/Services";
 import ContactPage from "./pages/Contact";
+import Login from "./pages/Login";
+import Register from "./pages/Register";
+import Account from "./pages/Account";
+import AuthCallback from "./pages/AuthCallback";
+import ProtectedRoute from "./components/ProtectedRoute";
+import PublicOnlyRoute from "./components/PublicOnlyRoute";
+import { useAuth } from "./context/AuthContext";
+
+function AuthLinks() {
+  const { loading, user, signOut } = useAuth();
+
+  if (loading) {
+    return <span className="nav-hint">Session...</span>;
+  }
+
+  if (user) {
+    return (
+      <>
+        <Link to="/account">Account</Link>
+        <button className="nav-action" type="button" onClick={() => void signOut()}>
+          Logout
+        </button>
+      </>
+    );
+  }
+
+  return (
+    <>
+      <Link to="/login">Login</Link>
+      <Link to="/register">Register</Link>
+    </>
+  );
+}
 
 export default function App() {
   return (
@@ -17,6 +50,7 @@ export default function App() {
             <Link to="/services">Services</Link>
             <Link to="/enquiry">Enquiry</Link>
             <Link to="/contact">Contact</Link>
+            <AuthLinks />
           </nav>
         </div>
       </header>
@@ -27,6 +61,14 @@ export default function App() {
           <Route path="/services/:slug" element={<ServiceDetail />} />
           <Route path="/enquiry" element={<Enquiry />} />
           <Route path="/contact" element={<ContactPage />} />
+          <Route path="/auth/callback" element={<AuthCallback />} />
+          <Route element={<PublicOnlyRoute />}>
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+          </Route>
+          <Route element={<ProtectedRoute />}>
+            <Route path="/account" element={<Account />} />
+          </Route>
         </Routes>
       </main>
       <footer className="footer">
@@ -41,6 +83,7 @@ export default function App() {
             <Link to="/services">Services</Link>
             <Link to="/enquiry">Enquiry</Link>
             <Link to="/contact">Contact</Link>
+            <AuthLinks />
           </div>
           <div>
             <p className="footer-meta">San Francisco Bay Area</p>

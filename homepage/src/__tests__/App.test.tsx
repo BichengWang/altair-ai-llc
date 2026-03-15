@@ -1,12 +1,15 @@
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
+import { AuthProvider } from "../context/AuthContext";
 import App from "../App";
 
 describe("Altair homepage", () => {
   it("renders key sections", () => {
     render(
       <MemoryRouter>
-        <App />
+        <AuthProvider>
+          <App />
+        </AuthProvider>
       </MemoryRouter>
     );
 
