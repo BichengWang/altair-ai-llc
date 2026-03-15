@@ -22,9 +22,7 @@ export function getMissingConfigMessage() {
 }
 
 export function getGoogleRedirectUrl() {
-  const callbackUrl = getAuthCallbackUrl();
-  callbackUrl.searchParams.set("next", buildAppPath("/account"));
-  return callbackUrl.toString();
+  return getAuthCallbackUrl().toString();
 }
 
 export function getAuthCallbackUrl() {

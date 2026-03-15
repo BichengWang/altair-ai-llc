@@ -74,7 +74,7 @@ let authStateChangeHandler: ((event: string, session: MockSession | null) => voi
 
 vi.mock("../lib/supabase", () => ({
   isSupabaseConfigured: true,
-  getGoogleRedirectUrl: () => "http://localhost:5173/auth/callback?next=%2Faccount",
+  getGoogleRedirectUrl: () => "http://localhost:5173/auth/callback",
   getMissingConfigMessage: () => "Missing config",
   getAuthErrorMessage: (error: unknown) =>
     error instanceof Error ? error.message : typeof error === "string" ? error : "Unknown error",
@@ -355,7 +355,7 @@ describe("auth flows", () => {
     expect(signInWithOAuthMock).toHaveBeenCalledWith({
       provider: "google",
       options: {
-        redirectTo: "http://localhost:5173/auth/callback?next=%2Faccount",
+        redirectTo: "http://localhost:5173/auth/callback",
       },
     });
   });
