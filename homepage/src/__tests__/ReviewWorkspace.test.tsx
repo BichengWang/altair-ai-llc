@@ -148,15 +148,16 @@ describe("Review workspace", () => {
 
     fetchMock.mockResolvedValue({
       ok: true,
-      json: async () => ({
-        choices: [
-          {
-            message: {
-              content: "The clause creates a 30-day payment obligation.",
+      text: async () =>
+        JSON.stringify({
+          choices: [
+            {
+              message: {
+                content: "The clause creates a 30-day payment obligation.",
+              },
             },
-          },
-        ],
-      }),
+          ],
+        }),
     } as Response);
 
     saveProviderSettings();
@@ -204,15 +205,16 @@ describe("Review workspace", () => {
 
     fetchMock.mockResolvedValue({
       ok: true,
-      json: async () => ({
-        choices: [
-          {
-            message: {
-              content: "Payment is due within 30 days.",
+      text: async () =>
+        JSON.stringify({
+          choices: [
+            {
+              message: {
+                content: "Payment is due within 30 days.",
+              },
             },
-          },
-        ],
-      }),
+          ],
+        }),
     } as Response);
 
     saveProviderSettings();
@@ -239,17 +241,50 @@ describe("Review workspace", () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
+  it("shows a clear error when the base url returns html instead of json", async () => {
+    const user = userEvent.setup();
+    const fetchMock = vi.mocked(fetch);
+
+    fetchMock.mockResolvedValue({
+      ok: false,
+      text: async () => "<html><body>Not found</body></html>",
+    } as Response);
+
+    saveProviderSettings();
+    renderReviewWorkspace();
+
+    await user.upload(
+      await screen.findByLabelText(/upload a docx file/i),
+      createDocxFile()
+    );
+    await screen.findByText(/payment will be due within 30 days\./i);
+
+    selectRenderedText("Payment will be due within 30 days.");
+
+    const textarea = await screen.findByLabelText(/ask about the selected clause/i);
+    await user.type(textarea, "What risk does this create?");
+    await user.click(screen.getByRole("button", { name: /ask agent/i }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      /returned html instead of json/i
+    );
+    await waitFor(() => {
+      expect(textarea).toHaveValue("What risk does this create?");
+    });
+  });
+
   it("shows a chat error and restores the draft when the compatible api returns an error", async () => {
     const user = userEvent.setup();
     const fetchMock = vi.mocked(fetch);
 
     fetchMock.mockResolvedValue({
       ok: false,
-      json: async () => ({
-        error: {
-          message: "Invalid API key",
-        },
-      }),
+      text: async () =>
+        JSON.stringify({
+          error: {
+            message: "Invalid API key",
+          },
+        }),
     } as Response);
 
     saveProviderSettings();
