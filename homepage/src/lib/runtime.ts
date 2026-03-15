@@ -9,6 +9,8 @@ type LocationLike = {
   port?: string;
   protocol?: string;
   search?: string;
+  pathname?: string;
+  hash?: string;
 };
 
 type BuildAppPathOptions = {
@@ -81,6 +83,22 @@ export function getWorkspaceOrigin(locationLike: LocationLike = window.location)
   const [subdomain, ...rest] = hostname.split(".");
   const workspaceHost = subdomain === "www" ? `llm.${rest.join(".")}` : `llm.${hostname}`;
   return `${protocol}//${workspaceHost}${port ? `:${port}` : ""}`.replace(/\/$/, "");
+}
+
+export function getAuthCallbackPathFromHash(locationLike: LocationLike = window.location) {
+  const hashParams = new URLSearchParams((locationLike.hash ?? "").replace(/^#/, ""));
+  const hasCallbackPayload =
+    hashParams.has("access_token") ||
+    hashParams.has("refresh_token") ||
+    hashParams.has("error") ||
+    hashParams.has("error_description");
+
+  if (!hasCallbackPayload || locationLike.pathname === "/auth/callback") {
+    return null;
+  }
+
+  const callbackPath = buildAppPath("/auth/callback", { locationLike });
+  return `${callbackPath}${locationLike.hash ?? ""}`;
 }
 
 export function buildWorkspaceUrl(
