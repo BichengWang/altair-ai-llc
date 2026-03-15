@@ -6,6 +6,7 @@ import AuthCallback from "../pages/AuthCallback";
 import ProtectedRoute from "../components/ProtectedRoute";
 import PublicOnlyRoute from "../components/PublicOnlyRoute";
 import WorkspaceShell from "../components/WorkspaceShell";
+import { ReviewRoute, ReviewSettingsRoute } from "../features/review/routes";
 import { buildAppPath } from "../lib/runtime";
 import WorkspaceEntry from "../pages/workspace/WorkspaceEntry";
 import WorkspaceChat from "../pages/workspace/WorkspaceChat";
@@ -22,6 +23,8 @@ export default function WorkspaceApp() {
         <Route path="/register" element={<Register />} />
       </Route>
       <Route element={<ProtectedRoute redirectTo={buildAppPath("/login", { app: "workspace" })} />}>
+        <Route path="/review" element={<ReviewRoute />} />
+        <Route path="/review/settings" element={<ReviewSettingsRoute />} />
         <Route element={<WorkspaceShell />}>
           <Route path="/chat" element={<WorkspaceChat />} />
           <Route path="/keys" element={<WorkspaceKeys />} />

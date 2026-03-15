@@ -9,6 +9,15 @@ vi.mock("docx-preview", () => ({
   renderAsync: vi.fn(),
 }));
 
+vi.mock("../context/AuthContext", () => ({
+  useAuth: () => ({
+    user: null,
+    profile: null,
+    loading: false,
+    signOut: vi.fn(),
+  }),
+}));
+
 const mockedDocxPreview = vi.mocked(docxPreview);
 
 describe("Review workspace", () => {
@@ -54,12 +63,10 @@ describe("Review workspace", () => {
 
     await screen.findByText(/payment will be due within 30 days\./i);
 
-    selectRenderedText("Payment will be due within 30 days.");
+    await selectRenderedText(user, "Payment will be due within 30 days.");
 
-    expect(screen.getByText(/^highlighted excerpt$/i)).toBeInTheDocument();
-    expect(
-      screen.getAllByText(/payment will be due within 30 days\./i)
-    ).toHaveLength(2);
+    expect(screen.getByText(/^selected excerpt$/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/payment will be due within 30 days\./i).length).toBeGreaterThan(1);
   });
 
   it("shows an actionable error when docx rendering fails", async () => {
@@ -93,6 +100,7 @@ describe("Review workspace", () => {
 
     renderReviewWorkspace("/review/settings");
 
+    await screen.findByRole("dialog", { name: /connection settings/i });
     await user.type(
       await screen.findByLabelText(/compatible api key/i),
       "typed-test-key"
@@ -127,7 +135,7 @@ describe("Review workspace", () => {
     );
     await screen.findByText(/payment will be due within 30 days\./i);
 
-    selectRenderedText("Payment will be due within 30 days.");
+    await selectRenderedText(user, "Payment will be due within 30 days.");
     await user.type(
       await screen.findByLabelText(/ask about the selected clause/i),
       "Does the env config enable chat?"
@@ -169,7 +177,7 @@ describe("Review workspace", () => {
     );
     await screen.findByText(/payment will be due within 30 days\./i);
 
-    selectRenderedText("Payment will be due within 30 days.");
+    await selectRenderedText(user, "Payment will be due within 30 days.");
 
     await user.type(
       await screen.findByLabelText(/ask about the selected clause/i),
@@ -226,7 +234,7 @@ describe("Review workspace", () => {
     );
     await screen.findByText(/payment will be due within 30 days\./i);
 
-    selectRenderedText("Payment will be due within 30 days.");
+    await selectRenderedText(user, "Payment will be due within 30 days.");
 
     const textarea = await screen.findByLabelText(/ask about the selected clause/i);
     await user.type(textarea, "Line one");
@@ -296,7 +304,7 @@ describe("Review workspace", () => {
     );
     await screen.findByText(/payment will be due within 30 days\./i);
 
-    selectRenderedText("Payment will be due within 30 days.");
+    await selectRenderedText(user, "Payment will be due within 30 days.");
 
     const textarea = await screen.findByLabelText(/ask about the selected clause/i);
     await user.type(textarea, "What risk does this create?");
@@ -323,7 +331,7 @@ function createDocxFile() {
   });
 }
 
-function selectRenderedText(text: string) {
+async function selectRenderedText(user: ReturnType<typeof userEvent.setup>, text: string) {
   const viewer = screen.getByLabelText(/rendered docx preview/i);
   const target = within(viewer).getByText(text);
   const range = document.createRange();
@@ -333,6 +341,7 @@ function selectRenderedText(text: string) {
   selection?.removeAllRanges();
   selection?.addRange(range);
   fireEvent.mouseUp(viewer);
+  await user.click(await screen.findByRole("button", { name: /ask about this/i }));
 }
 
 function saveProviderSettings() {

@@ -1,4 +1,3 @@
-import { lazy, Suspense } from "react";
 import { Link, Route, Routes, useLocation } from "react-router-dom";
 import Home from "./pages/Home";
 import Enquiry from "./pages/Enquiry";
@@ -12,6 +11,7 @@ import AuthCallback from "./pages/AuthCallback";
 import ProtectedRoute from "./components/ProtectedRoute";
 import PublicOnlyRoute from "./components/PublicOnlyRoute";
 import { useAuth } from "./context/AuthContext";
+import { ReviewRoute, ReviewSettingsRoute } from "./features/review/routes";
 
 function AuthLinks() {
   const { loading, user, signOut } = useAuth();
@@ -38,9 +38,6 @@ function AuthLinks() {
     </>
   );
 }
-
-const ReviewWorkspace = lazy(() => import("./pages/ReviewWorkspace"));
-const ReviewSettings = lazy(() => import("./pages/ReviewSettings"));
 
 export default function App() {
   const location = useLocation();
@@ -79,38 +76,8 @@ export default function App() {
           <Route element={<ProtectedRoute />}>
             <Route path="/account" element={<Account />} />
           </Route>
-          <Route
-            path="/review"
-            element={
-              <Suspense
-                fallback={
-                  <section className="page-section">
-                    <div className="container">
-                      <p>Loading review workspace...</p>
-                    </div>
-                  </section>
-                }
-              >
-                <ReviewWorkspace />
-              </Suspense>
-            }
-          />
-          <Route
-            path="/review/settings"
-            element={
-              <Suspense
-                fallback={
-                  <section className="page-section">
-                    <div className="container">
-                      <p>Loading review settings...</p>
-                    </div>
-                  </section>
-                }
-              >
-                <ReviewSettings />
-              </Suspense>
-            }
-          />
+          <Route path="/review" element={<ReviewRoute />} />
+          <Route path="/review/settings" element={<ReviewSettingsRoute />} />
         </Routes>
       </main>
       {isReviewRoute ? null : (
