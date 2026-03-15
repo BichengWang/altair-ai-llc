@@ -18,6 +18,11 @@ interface OpenAiCompatibleResponse {
   };
 }
 
+interface ParsedResponseBody {
+  json: OpenAiCompatibleResponse | null;
+  rawText: string;
+}
+
 export async function requestReviewResponse({
   apiKey,
   baseUrl,
@@ -85,16 +90,23 @@ export async function requestReviewResponse({
     throw error;
   }
 
-  const body = (await response.json()) as OpenAiCompatibleResponse;
+  const body = await parseResponseBody(response);
 
   if (!response.ok) {
     throw new Error(
-      body.error?.message ??
+      body.json?.error?.message ??
+        inferHtmlError(body.rawText) ??
         "Compatible API request failed. Check the API key, base URL, model, and allowed origin."
     );
   }
 
-  const content = body.choices?.[0]?.message?.content;
+  if (!body.json) {
+    throw new Error(
+      "Compatible API returned a non-JSON response. Check the base URL and endpoint path."
+    );
+  }
+
+  const content = body.json.choices?.[0]?.message?.content;
   const text =
     typeof content === "string"
       ? content.trim()
@@ -113,4 +125,32 @@ export async function requestReviewResponse({
 
 function normalizeBaseUrl(value: string): string {
   return value.replace(/\/+$/, "");
+}
+
+async function parseResponseBody(response: Response): Promise<ParsedResponseBody> {
+  const rawText = await response.text();
+
+  if (!rawText.trim()) {
+    return { json: null, rawText: "" };
+  }
+
+  try {
+    return {
+      json: JSON.parse(rawText) as OpenAiCompatibleResponse,
+      rawText,
+    };
+  } catch {
+    return {
+      json: null,
+      rawText,
+    };
+  }
+}
+
+function inferHtmlError(rawText: string): string | null {
+  if (!/^\s*</.test(rawText)) {
+    return null;
+  }
+
+  return "Compatible API returned HTML instead of JSON. This usually means the base URL is wrong (for example, pointed at a website instead of an API endpoint).";
 }
