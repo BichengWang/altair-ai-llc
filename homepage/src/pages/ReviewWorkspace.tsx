@@ -32,12 +32,6 @@ type ReviewWorkspaceProps = {
   settingsEntry?: boolean;
 };
 
-type PendingSelection = {
-  text: string;
-  top: number;
-  left: number;
-};
-
 export default function ReviewWorkspace({
   initialConnectionOpen = false,
   settingsEntry = false,
@@ -49,12 +43,8 @@ export default function ReviewWorkspace({
   const fileInputId = "review-docx-upload";
   const viewerRef = useRef<HTMLDivElement | null>(null);
   const composerFormRef = useRef<HTMLFormElement | null>(null);
-  const questionInputRef = useRef<HTMLTextAreaElement | null>(null);
   const [uploadedDoc, setUploadedDoc] = useState<UploadedDoc | null>(null);
   const [selectedExcerpt, setSelectedExcerpt] = useState<SelectedExcerpt | null>(
-    null
-  );
-  const [pendingSelection, setPendingSelection] = useState<PendingSelection | null>(
     null
   );
   const [providerConfig, setProviderConfig] = useState(() => loadProviderConfig());
@@ -105,7 +95,6 @@ export default function ReviewWorkspace({
         await renderDocxPreview(uploadedDoc.data, viewerRef.current!);
 
         if (!isCancelled) {
-          setPendingSelection(null);
           setSelectedExcerpt(null);
         }
       } catch (error) {
@@ -160,14 +149,12 @@ export default function ReviewWorkspace({
 
       startTransition(() => {
         setUploadedDoc(nextDoc);
-        setPendingSelection(null);
         setSelectedExcerpt(null);
         setMessages([]);
         setQuestion("");
       });
     } catch (error) {
       setUploadedDoc(null);
-      setPendingSelection(null);
       setSelectedExcerpt(null);
       setMessages([]);
       setUploadError(
@@ -184,7 +171,6 @@ export default function ReviewWorkspace({
     const selection = window.getSelection();
 
     if (!container || !selection || selection.rangeCount === 0) {
-      setPendingSelection(null);
       return;
     }
 
@@ -196,47 +182,15 @@ export default function ReviewWorkspace({
       selection.isCollapsed ||
       !container.contains(range.commonAncestorContainer)
     ) {
-      setPendingSelection(null);
       return;
     }
 
-    const rect = getSelectionRect(range, container);
-    const containerRect = container.getBoundingClientRect();
-    const top = clamp(
-      rect.top - containerRect.top + container.scrollTop - 48,
-      12,
-      container.scrollHeight - 12
-    );
-    const left = clamp(
-      rect.left -
-        containerRect.left +
-        container.scrollLeft +
-        Math.max(rect.width / 2, 72),
-      80,
-      Math.max(80, container.clientWidth - 80)
-    );
-
-    setPendingSelection({
-      text,
-      top,
-      left,
-    });
+    setSelectedExcerpt((current) => (current?.text === text ? current : { text }));
     setChatError(null);
-  }
-
-  function activateSelectedExcerpt() {
-    if (!pendingSelection) {
-      return;
-    }
-
-    setSelectedExcerpt({ text: pendingSelection.text });
-    setPendingSelection(null);
-    questionInputRef.current?.focus();
   }
 
   function clearSelection() {
     window.getSelection()?.removeAllRanges();
-    setPendingSelection(null);
     setSelectedExcerpt(null);
   }
 
@@ -418,7 +372,6 @@ export default function ReviewWorkspace({
                 className="review-document-viewer"
                 onKeyUp={captureSelection}
                 onMouseUp={captureSelection}
-                onScroll={() => setPendingSelection(null)}
               >
                 {uploadedDoc ? null : (
                   <div className="review-placeholder review-placeholder-document">
@@ -427,46 +380,10 @@ export default function ReviewWorkspace({
                   </div>
                 )}
               </div>
-
-              {pendingSelection ? (
-                <div
-                  className="review-selection-float"
-                  style={{
-                    left: `${pendingSelection.left}px`,
-                    top: `${pendingSelection.top}px`,
-                  }}
-                >
-                  <button
-                    className="button"
-                    onClick={activateSelectedExcerpt}
-                    type="button"
-                  >
-                    Ask about this
-                  </button>
-                </div>
-              ) : null}
             </div>
           </section>
 
           <aside className="review-chat-rail">
-            <section className="review-context-panel">
-              <div className="review-rail-header">
-                <span className="review-rail-label">Selected excerpt</span>
-                {selectedExcerpt ? (
-                  <button className="review-inline-action" onClick={clearSelection} type="button">
-                    Clear
-                  </button>
-                ) : null}
-              </div>
-              {selectedExcerpt ? (
-                <p className="review-context-text">{selectedExcerpt.text}</p>
-              ) : (
-                <p className="review-empty-note">
-                  Highlight text in the document, then use the floating action to set chat context.
-                </p>
-              )}
-            </section>
-
             <section className="review-chat-log-shell">
               <div className="review-chat-log" aria-live="polite">
                 {messages.length > 0 ? (
@@ -525,8 +442,22 @@ export default function ReviewWorkspace({
               <label className="review-composer-label" htmlFor="review-question">
                 Ask about the selected clause
               </label>
+              {selectedExcerpt ? (
+                <div className="review-context-attachment">
+                  <div className="review-rail-header">
+                    <span className="review-rail-label">Using selection</span>
+                    <button className="review-inline-action" onClick={clearSelection} type="button">
+                      Clear
+                    </button>
+                  </div>
+                  <p className="review-context-text">{selectedExcerpt.text}</p>
+                </div>
+              ) : (
+                <p className="review-empty-note">
+                  Select text in the document to attach context to your question.
+                </p>
+              )}
               <textarea
-                ref={questionInputRef}
                 id="review-question"
                 className="input textarea review-textarea"
                 onChange={(event) => setQuestion(event.target.value)}
@@ -651,23 +582,6 @@ export default function ReviewWorkspace({
       ) : null}
     </section>
   );
-}
-
-function clamp(value: number, min: number, max: number) {
-  return Math.min(Math.max(value, min), max);
-}
-
-function getSelectionRect(range: Range, container: HTMLDivElement) {
-  if (typeof range.getBoundingClientRect === "function") {
-    return range.getBoundingClientRect();
-  }
-
-  const node =
-    range.commonAncestorContainer.nodeType === Node.ELEMENT_NODE
-      ? (range.commonAncestorContainer as Element)
-      : range.commonAncestorContainer.parentElement;
-
-  return node?.getBoundingClientRect() ?? container.getBoundingClientRect();
 }
 
 function formatFileSize(size: number): string {
