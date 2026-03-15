@@ -39,6 +39,7 @@ Elegant, single-page marketing site for Altair's local services platform.
    VITE_SUPABASE_PUBLISHABLE_KEY=your-publishable-key
    VITE_WORKSPACE_ORIGIN=https://llm.your-domain.example
    ```
+   These `VITE_*` values are public client-side build variables. In GitHub Actions, store them as Environment variables rather than secrets because Vite includes them in the browser bundle.
 
 ## Workspace edge function setup
 
@@ -48,7 +49,7 @@ Required secrets for the function environment:
 
 ```bash
 SUPABASE_URL=https://your-project-ref.supabase.co
-SUPABASE_ANON_KEY=your-anon-key
+SUPABASE_PUBLISHABLE_KEY=your-publishable-key
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 WORKSPACE_ENCRYPTION_SECRET=a-long-random-secret
 ```

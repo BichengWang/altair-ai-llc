@@ -73,13 +73,13 @@ const corsHeaders = {
 };
 
 const supabaseUrl = Deno.env.get("SUPABASE_URL");
-const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY");
+const supabasePublishableKey = Deno.env.get("SUPABASE_PUBLISHABLE_KEY");
 const supabaseServiceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 const encryptionSecret = Deno.env.get("WORKSPACE_ENCRYPTION_SECRET");
 
-if (!supabaseUrl || !supabaseAnonKey || !supabaseServiceRoleKey || !encryptionSecret) {
+if (!supabaseUrl || !supabasePublishableKey || !supabaseServiceRoleKey || !encryptionSecret) {
   throw new Error(
-    "Missing required Supabase or workspace secrets. Configure SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY, and WORKSPACE_ENCRYPTION_SECRET."
+    "Missing required Supabase or workspace secrets. Configure SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, SUPABASE_SERVICE_ROLE_KEY, and WORKSPACE_ENCRYPTION_SECRET."
   );
 }
 
@@ -102,7 +102,7 @@ function errorResponse(message: string, status = 400) {
 }
 
 function getUserClient(authHeader: string) {
-  return createClient(supabaseUrl, supabaseAnonKey, {
+  return createClient(supabaseUrl, supabasePublishableKey, {
     auth: { persistSession: false, autoRefreshToken: false },
     global: {
       headers: {
