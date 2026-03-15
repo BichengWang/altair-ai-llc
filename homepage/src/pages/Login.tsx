@@ -1,6 +1,7 @@
 import { FormEvent, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { buildAppPath, getDefaultSignedInPath } from "../lib/runtime";
 import { getAuthErrorMessage, getMissingConfigMessage } from "../lib/supabase";
 
 function isValidEmail(value: string) {
@@ -16,7 +17,8 @@ export default function Login() {
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
-  const from = typeof location.state?.from === "string" ? location.state.from : "/account";
+  const from =
+    typeof location.state?.from === "string" ? location.state.from : getDefaultSignedInPath();
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -135,7 +137,7 @@ export default function Login() {
           </button>
           <p className="auth-switch">
             New here?{" "}
-            <Link className="text-link" to="/register">
+            <Link className="text-link" to={buildAppPath("/register")}>
               Create an account
             </Link>
           </p>

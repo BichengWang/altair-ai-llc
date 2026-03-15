@@ -22,24 +22,55 @@ Elegant, single-page marketing site for Altair's local services platform.
 
 1. Create a Supabase project.
 2. In the Supabase SQL editor, run [`supabase/profiles.sql`](./supabase/profiles.sql) to create the `profiles` table, row-level security policies, and the auth trigger that seeds profile rows.
-3. In Supabase Auth settings, enable:
+3. Run [`supabase/workspace.sql`](./supabase/workspace.sql) to create the workspace tables for provider credentials, managed keys, conversations, usage events, and SSO handoffs.
+4. In Supabase Auth settings, enable:
    - Email/password auth
    - Google provider
-4. In the Google Cloud console, create OAuth credentials and add the redirect URI Supabase gives you for the Google provider.
-5. In Supabase Auth URL configuration, add these redirect URLs:
+5. In the Google Cloud console, create OAuth credentials and add the redirect URI Supabase gives you for the Google provider.
+6. In Supabase Auth URL configuration, add these redirect URLs:
    - Local dev: `http://localhost:5173/auth/callback`
+   - Local workspace preview: `http://localhost:5173/auth/callback?app=workspace`
    - Production: `https://your-domain.example/auth/callback`
+   - Production workspace: `https://llm.your-domain.example/auth/callback`
    - Site URL for email confirmation: your deployed homepage origin
-6. Add these Vite env vars to `.env.local` and your deployment environment:
+7. Add these Vite env vars to `.env.local` and your deployment environment:
    ```bash
    VITE_SUPABASE_URL=https://your-project-ref.supabase.co
    VITE_SUPABASE_PUBLISHABLE_KEY=your-publishable-key
+   VITE_WORKSPACE_ORIGIN=https://llm.your-domain.example
    ```
+
+## Workspace edge function setup
+
+Deploy the Supabase Edge Function in [`supabase/functions/workspace-api`](./supabase/functions/workspace-api).
+
+Required secrets for the function environment:
+
+```bash
+SUPABASE_URL=https://your-project-ref.supabase.co
+SUPABASE_ANON_KEY=your-anon-key
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+WORKSPACE_ENCRYPTION_SECRET=a-long-random-secret
+```
+
+The workspace function exposes these routes under `workspace-api`:
+
+- `POST /credentials/create`
+- `POST /credentials/validate`
+- `GET /credentials/list`
+- `POST /managed-key/bootstrap`
+- `POST /sso-handoff/create`
+- `POST /sso-handoff/consume`
+- `GET /conversations`
+- `POST /conversations`
+- `GET /messages`
+- `POST /chat/complete`
 
 ## Auth routes
 
 - Public: `/`, `/services`, `/services/:slug`, `/enquiry`, `/contact`, `/login`, `/register`, `/auth/callback`
 - Protected: `/account`
+- Workspace host: `/`, `/login`, `/register`, `/auth/callback`, `/chat`, `/keys`, `/usage`, `/account`
 
 ## Tests
 

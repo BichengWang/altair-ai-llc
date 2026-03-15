@@ -1,0 +1,89 @@
+import { describe, expect, it } from "vitest";
+import { buildAppPath, buildWorkspaceUrl, detectActiveApp, getDefaultSignedInPath } from "../lib/runtime";
+
+describe("runtime host detection", () => {
+  it("detects the workspace app from the llm subdomain", () => {
+    expect(
+      detectActiveApp({
+        hostname: "llm.altair.test",
+        origin: "https://llm.altair.test",
+        search: "",
+      })
+    ).toBe("workspace");
+  });
+
+  it("supports workspace preview mode on localhost", () => {
+    expect(
+      detectActiveApp({
+        hostname: "localhost",
+        origin: "http://localhost:5173",
+        search: "?app=workspace",
+      })
+    ).toBe("workspace");
+  });
+
+  it("defaults to the marketing app otherwise", () => {
+    expect(
+      detectActiveApp({
+        hostname: "www.altair.test",
+        origin: "https://www.altair.test",
+        search: "",
+      })
+    ).toBe("marketing");
+  });
+
+  it("builds handoff URLs against the llm subdomain", () => {
+    expect(
+      buildWorkspaceUrl("/chat", {
+        handoffToken: "handoff-123",
+        locationLike: {
+          hostname: "www.altair.test",
+          origin: "https://www.altair.test",
+          protocol: "https:",
+          search: "",
+        },
+      })
+    ).toBe("https://llm.altair.test/chat?handoff=handoff-123");
+  });
+
+  it("uses host-aware default signed-in destinations", () => {
+    expect(
+      getDefaultSignedInPath("marketing", {
+        hostname: "www.altair.test",
+        origin: "https://www.altair.test",
+        search: "",
+      })
+    ).toBe("/account");
+    expect(
+      getDefaultSignedInPath("workspace", {
+        hostname: "localhost",
+        origin: "http://localhost:5173",
+        search: "?app=workspace",
+      })
+    ).toBe("/chat?app=workspace");
+  });
+
+  it("keeps marketing localhost paths clean and scopes workspace localhost paths", () => {
+    expect(
+      buildAppPath("/account", {
+        app: "marketing",
+        locationLike: {
+          hostname: "localhost",
+          origin: "http://localhost:5173",
+          search: "",
+        },
+      })
+    ).toBe("/account");
+
+    expect(
+      buildAppPath("/chat", {
+        app: "workspace",
+        locationLike: {
+          hostname: "localhost",
+          origin: "http://localhost:5173",
+          search: "",
+        },
+      })
+    ).toBe("/chat?app=workspace");
+  });
+});
