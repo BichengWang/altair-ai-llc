@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { getDefaultSignedInPath } from "../lib/runtime";
 import { getAuthErrorMessage, getMissingConfigMessage, supabase } from "../lib/supabase";
 
 export default function AuthCallback() {
@@ -30,7 +31,7 @@ export default function AuthCallback() {
       return;
     }
 
-    const next = searchParams.get("next") || "/account";
+    const next = searchParams.get("next") || getDefaultSignedInPath();
     const code = searchParams.get("code");
     const accessToken = hashParams.get("access_token");
     const refreshToken = hashParams.get("refresh_token");

@@ -1,7 +1,11 @@
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
-export default function ProtectedRoute() {
+type ProtectedRouteProps = {
+  redirectTo?: string;
+};
+
+export default function ProtectedRoute({ redirectTo = "/login" }: ProtectedRouteProps) {
   const { loading, user } = useAuth();
   const location = useLocation();
 
@@ -16,7 +20,7 @@ export default function ProtectedRoute() {
   if (!user) {
     return (
       <Navigate
-        to="/login"
+        to={redirectTo}
         replace
         state={{ from: `${location.pathname}${location.search}${location.hash}` }}
       />

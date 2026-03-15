@@ -1,0 +1,309 @@
+.workspace-app-shell {
+  display: grid;
+  grid-template-columns: minmax(260px, 320px) 1fr;
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at top left, rgba(255, 218, 185, 0.35), transparent 28%),
+    linear-gradient(135deg, #f8f2ea 0%, #fffaf4 50%, #eef4ff 100%);
+  color: #132033;
+}
+
+.workspace-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding: 2rem;
+  border-right: 1px solid rgba(19, 32, 51, 0.08);
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(14px);
+}
+
+.workspace-brand-block h1,
+.workspace-page-header h2,
+.workspace-chat-sidebar-header h2,
+.workspace-chat-header h2,
+.workspace-panel h3,
+.workspace-status-panel h2 {
+  margin: 0.5rem 0;
+}
+
+.workspace-nav {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.workspace-nav-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.9rem 1rem;
+  border-radius: 1rem;
+  color: inherit;
+  text-decoration: none;
+  background: rgba(19, 32, 51, 0.04);
+  transition: transform 160ms ease, background-color 160ms ease, color 160ms ease;
+}
+
+.workspace-nav-link:hover,
+.workspace-nav-link.active {
+  background: #132033;
+  color: #fffaf4;
+  transform: translateX(2px);
+}
+
+.workspace-profile-card,
+.workspace-panel {
+  border: 1px solid rgba(19, 32, 51, 0.08);
+  border-radius: 1.5rem;
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: 0 24px 60px rgba(19, 32, 51, 0.08);
+}
+
+.workspace-profile-card {
+  display: grid;
+  gap: 0.75rem;
+  padding: 1.25rem;
+  margin-top: auto;
+}
+
+.workspace-profile-name {
+  margin: 0;
+  font-weight: 700;
+}
+
+.workspace-profile-email,
+.workspace-panel p {
+  margin: 0;
+}
+
+.workspace-main {
+  padding: 2rem;
+}
+
+.workspace-page,
+.workspace-chat-page {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.workspace-page-header,
+.workspace-chat-sidebar-header,
+.workspace-chat-header,
+.workspace-composer-actions,
+.workspace-data-row,
+.workspace-table-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.workspace-grid.two-up {
+  display: grid;
+  gap: 1.5rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.workspace-grid.three-up {
+  display: grid;
+  gap: 1.5rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.workspace-panel {
+  display: grid;
+  gap: 1rem;
+  padding: 1.5rem;
+}
+
+.workspace-form {
+  display: grid;
+  gap: 1rem;
+}
+
+.workspace-hint {
+  color: #5a6472;
+  font-size: 0.95rem;
+}
+
+.workspace-table {
+  display: grid;
+  gap: 1rem;
+}
+
+.workspace-table-row {
+  padding: 1rem 0;
+  border-top: 1px solid rgba(19, 32, 51, 0.08);
+}
+
+.workspace-table-row:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.workspace-status-chip {
+  display: inline-flex;
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  text-transform: capitalize;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.workspace-status-chip.valid {
+  background: rgba(23, 134, 85, 0.14);
+  color: #178655;
+}
+
+.workspace-status-chip.pending {
+  background: rgba(183, 107, 13, 0.14);
+  color: #b76b0d;
+}
+
+.workspace-status-chip.invalid,
+.workspace-status-chip.error {
+  background: rgba(193, 47, 47, 0.12);
+  color: #c12f2f;
+}
+
+.workspace-metric {
+  font-size: clamp(2rem, 4vw, 3rem);
+  font-weight: 800;
+}
+
+.workspace-chat-page {
+  grid-template-columns: minmax(260px, 320px) 1fr;
+  align-items: start;
+}
+
+.workspace-chat-sidebar,
+.workspace-chat-main {
+  display: grid;
+  gap: 1rem;
+}
+
+.workspace-conversation-list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.workspace-conversation-card {
+  display: grid;
+  gap: 0.35rem;
+  text-align: left;
+  padding: 1rem;
+  border: 1px solid rgba(19, 32, 51, 0.08);
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.85);
+}
+
+.workspace-conversation-card.active {
+  border-color: rgba(19, 32, 51, 0.3);
+  background: rgba(19, 32, 51, 0.06);
+}
+
+.workspace-routing-controls {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.workspace-message-thread {
+  min-height: 440px;
+  align-content: start;
+}
+
+.workspace-message {
+  display: grid;
+  gap: 0.65rem;
+  padding: 1rem 1.1rem;
+  border-radius: 1rem;
+  background: rgba(19, 32, 51, 0.04);
+}
+
+.workspace-message header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  font-size: 0.9rem;
+}
+
+.workspace-message.user {
+  background: rgba(236, 110, 60, 0.12);
+}
+
+.workspace-message.assistant {
+  background: rgba(19, 32, 51, 0.08);
+}
+
+.workspace-textarea {
+  min-height: 140px;
+  resize: vertical;
+}
+
+.workspace-empty-state {
+  padding: 2rem;
+  border: 1px dashed rgba(19, 32, 51, 0.18);
+  border-radius: 1rem;
+  color: #5a6472;
+}
+
+.workspace-entry-page {
+  place-items: center;
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at top left, rgba(236, 110, 60, 0.2), transparent 24%),
+    linear-gradient(135deg, #f7efe4 0%, #fffaf4 50%, #edf1fb 100%);
+}
+
+.workspace-status-panel {
+  width: min(540px, calc(100vw - 2rem));
+}
+
+.workspace-launcher {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.workspace-launcher-error {
+  max-width: 30rem;
+}
+
+.workspace-account-card {
+  align-content: start;
+}
+
+@media (max-width: 1080px) {
+  .workspace-app-shell,
+  .workspace-chat-page,
+  .workspace-grid.two-up,
+  .workspace-grid.three-up {
+    grid-template-columns: 1fr;
+  }
+
+  .workspace-sidebar {
+    border-right: 0;
+    border-bottom: 1px solid rgba(19, 32, 51, 0.08);
+  }
+}
+
+@media (max-width: 720px) {
+  .workspace-main,
+  .workspace-sidebar {
+    padding: 1.25rem;
+  }
+
+  .workspace-page-header,
+  .workspace-chat-sidebar-header,
+  .workspace-chat-header,
+  .workspace-composer-actions,
+  .workspace-data-row,
+  .workspace-table-row {
+    align-items: start;
+    flex-direction: column;
+  }
+
+  .workspace-routing-controls {
+    grid-template-columns: 1fr;
+  }
+}

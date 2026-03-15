@@ -1,6 +1,7 @@
 import { FormEvent, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { buildAppPath, getDefaultSignedInPath } from "../lib/runtime";
 import { getAuthErrorMessage, getMissingConfigMessage } from "../lib/supabase";
 
 const MIN_PASSWORD_LENGTH = 8;
@@ -56,7 +57,7 @@ export default function Register() {
       });
 
       if (result.session) {
-        navigate("/account", { replace: true });
+        navigate(getDefaultSignedInPath(), { replace: true });
         return;
       }
 
@@ -180,7 +181,7 @@ export default function Register() {
           </button>
           <p className="auth-switch">
             Already registered?{" "}
-            <Link className="text-link" to="/login">
+            <Link className="text-link" to={buildAppPath("/login")}>
               Sign in
             </Link>
           </p>

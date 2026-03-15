@@ -17,3 +17,11 @@ test("account route redirects guests to login", async ({ page }) => {
   await expect(page).toHaveURL(/\/login$/);
   await expect(page.getByRole("heading", { name: /welcome back to altair/i })).toBeVisible();
 });
+
+test("workspace preview mode redirects guests into the workspace login", async ({ page }) => {
+  await page.goto("/?app=workspace");
+
+  await expect(page).toHaveURL(/\/login\?app=workspace$/);
+  await expect(page.getByRole("heading", { name: /welcome back to altair/i })).toBeVisible();
+  await expect(page.locator(".workspace-app-shell")).toBeHidden();
+});

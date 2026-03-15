@@ -1,7 +1,11 @@
 import { Navigate, Outlet } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
-export default function PublicOnlyRoute() {
+type PublicOnlyRouteProps = {
+  authenticatedTo?: string;
+};
+
+export default function PublicOnlyRoute({ authenticatedTo = "/account" }: PublicOnlyRouteProps) {
   const { loading, user } = useAuth();
 
   if (loading) {
@@ -13,7 +17,7 @@ export default function PublicOnlyRoute() {
   }
 
   if (user) {
-    return <Navigate to="/account" replace />;
+    return <Navigate to={authenticatedTo} replace />;
   }
 
   return <Outlet />;
