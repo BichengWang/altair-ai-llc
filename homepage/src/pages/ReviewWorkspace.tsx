@@ -63,21 +63,30 @@ export default function ReviewWorkspace({
   const workspaceLoginPath = buildAppPath("/login", { app: "workspace" });
   const marketingHomePath = buildAppPath("/", { app: "marketing" });
 
-  const effectiveApiKey =
+  const configuredApiKey =
     providerConfig.apiKey.trim() ||
     import.meta.env.VITE_LLM_API_KEY ||
     import.meta.env.VITE_ANTHROPIC_API_KEY ||
     "";
-  const effectiveModel =
+  const configuredModel =
     providerConfig.model.trim() ||
     import.meta.env.VITE_LLM_MODEL ||
-    import.meta.env.VITE_ANTHROPIC_MODEL ||
-    "gpt-4.1-mini";
-  const effectiveBaseUrl =
+    import.meta.env.VITE_ANTHROPIC_MODEL;
+  const configuredBaseUrl =
     providerConfig.baseUrl.trim() ||
     import.meta.env.VITE_LLM_BASE_URL ||
-    import.meta.env.VITE_OPENAI_COMPAT_BASE_URL ||
-    "https://api.openai.com/v1";
+    import.meta.env.VITE_OPENAI_COMPAT_BASE_URL;
+  const effectiveApiKey = configuredApiKey;
+  const effectiveBaseUrl = resolveReviewBaseUrl({
+    apiKey: effectiveApiKey,
+    baseUrl: configuredBaseUrl,
+    anthropicBaseUrl: import.meta.env.VITE_ANTHROPIC_API_URL,
+  });
+  const effectiveModel = resolveReviewModel({
+    apiKey: effectiveApiKey,
+    baseUrl: effectiveBaseUrl,
+    model: configuredModel,
+  });
   const hasApiKey = Boolean(effectiveApiKey);
 
   useEffect(() => {
@@ -590,4 +599,52 @@ function formatFileSize(size: number): string {
   }
 
   return `${Math.max(1, Math.round(size / 1024))} KB`;
+}
+
+function resolveReviewBaseUrl({
+  apiKey,
+  baseUrl,
+  anthropicBaseUrl,
+}: {
+  apiKey: string;
+  baseUrl?: string;
+  anthropicBaseUrl?: string;
+}) {
+  const normalizedBaseUrl = baseUrl?.trim() ?? "";
+
+  if (normalizedBaseUrl) {
+    return normalizedBaseUrl;
+  }
+
+  if (looksLikeAnthropicKey(apiKey)) {
+    return anthropicBaseUrl?.trim() || "https://api.anthropic.com/v1";
+  }
+
+  return "https://api.openai.com/v1";
+}
+
+function resolveReviewModel({
+  apiKey,
+  baseUrl,
+  model,
+}: {
+  apiKey: string;
+  baseUrl: string;
+  model?: string;
+}) {
+  const normalizedModel = model?.trim() ?? "";
+
+  if (normalizedModel) {
+    return normalizedModel;
+  }
+
+  if (looksLikeAnthropicKey(apiKey) || /(^https?:\/\/)?api\.anthropic\.com\b/i.test(baseUrl)) {
+    return "claude-sonnet-4-20250514";
+  }
+
+  return "gpt-4.1-mini";
+}
+
+function looksLikeAnthropicKey(apiKey: string) {
+  return apiKey.trim().startsWith("sk-ant-");
 }

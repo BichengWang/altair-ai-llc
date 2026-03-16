@@ -144,6 +144,58 @@ describe("Review workspace", () => {
     ).toBeEnabled();
   });
 
+  it("switches to anthropic compatibility defaults when only an anthropic env key is present", async () => {
+    const user = userEvent.setup();
+    const fetchMock = vi.mocked(fetch);
+
+    vi.stubEnv("VITE_LLM_API_KEY", "");
+    vi.stubEnv("VITE_LLM_MODEL", "");
+    vi.stubEnv("VITE_LLM_BASE_URL", "");
+    vi.stubEnv("VITE_OPENAI_COMPAT_BASE_URL", "");
+    vi.stubEnv("VITE_ANTHROPIC_API_KEY", "sk-ant-test-key");
+    vi.stubEnv("VITE_ANTHROPIC_MODEL", "");
+    vi.stubEnv("VITE_ANTHROPIC_API_URL", "");
+
+    fetchMock.mockResolvedValue({
+      ok: true,
+      text: async () =>
+        JSON.stringify({
+          choices: [
+            {
+              message: {
+                content: "The clause allows termination with notice.",
+              },
+            },
+          ],
+        }),
+    } as Response);
+
+    renderReviewWorkspace();
+
+    await user.upload(
+      await screen.findByLabelText(/upload a docx file/i),
+      createDocxFile()
+    );
+    await screen.findByText(/payment will be due within 30 days\./i);
+
+    selectRenderedText("Payment will be due within 30 days.");
+    await user.type(
+      await screen.findByLabelText(/ask about the selected clause/i),
+      "What does this clause do?"
+    );
+    await user.click(screen.getByRole("button", { name: /ask agent/i }));
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://api.anthropic.com/v1/chat/completions",
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          authorization: "Bearer sk-ant-test-key",
+        }),
+        body: expect.stringContaining('"model":"claude-sonnet-4-20250514"'),
+      })
+    );
+  });
+
   it("sends the highlighted excerpt and question to a compatible api", async () => {
     const user = userEvent.setup();
     const fetchMock = vi.mocked(fetch);
@@ -202,6 +254,54 @@ describe("Review workspace", () => {
           authorization: "Bearer typed-test-key",
         }),
       })
+    );
+  });
+
+  it("normalizes the bare openai api root to the v1 chat endpoint", async () => {
+    const user = userEvent.setup();
+    const fetchMock = vi.mocked(fetch);
+
+    fetchMock.mockResolvedValue({
+      ok: true,
+      text: async () =>
+        JSON.stringify({
+          choices: [
+            {
+              message: {
+                content: "The clause creates a 30-day payment obligation.",
+              },
+            },
+          ],
+        }),
+    } as Response);
+
+    window.localStorage.setItem(
+      "review-provider-config",
+      JSON.stringify({
+        apiKey: "typed-test-key",
+        model: "gpt-5.4",
+        baseUrl: "https://api.openai.com",
+      })
+    );
+
+    renderReviewWorkspace();
+
+    await user.upload(
+      await screen.findByLabelText(/upload a docx file/i),
+      createDocxFile()
+    );
+    await screen.findByText(/payment will be due within 30 days\./i);
+
+    selectRenderedText("Payment will be due within 30 days.");
+    await user.type(
+      await screen.findByLabelText(/ask about the selected clause/i),
+      "What obligation does this create?"
+    );
+    await user.click(screen.getByRole("button", { name: /ask agent/i }));
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://api.openai.com/v1/chat/completions",
+      expect.any(Object)
     );
   });
 
@@ -277,6 +377,39 @@ describe("Review workspace", () => {
     await waitFor(() => {
       expect(textarea).toHaveValue("What risk does this create?");
     });
+  });
+
+  it("explains when the browser origin is blocked by anthropic's compatibility api", async () => {
+    const user = userEvent.setup();
+    const fetchMock = vi.mocked(fetch);
+
+    vi.stubEnv("VITE_LLM_API_KEY", "");
+    vi.stubEnv("VITE_LLM_MODEL", "");
+    vi.stubEnv("VITE_LLM_BASE_URL", "");
+    vi.stubEnv("VITE_OPENAI_COMPAT_BASE_URL", "");
+    vi.stubEnv("VITE_ANTHROPIC_API_KEY", "sk-ant-test-key");
+    vi.stubEnv("VITE_ANTHROPIC_MODEL", "");
+    vi.stubEnv("VITE_ANTHROPIC_API_URL", "https://api.anthropic.com/v1");
+
+    fetchMock.mockRejectedValue(new TypeError("Failed to fetch"));
+
+    renderReviewWorkspace();
+
+    await user.upload(
+      await screen.findByLabelText(/upload a docx file/i),
+      createDocxFile()
+    );
+    await screen.findByText(/payment will be due within 30 days\./i);
+
+    selectRenderedText("Payment will be due within 30 days.");
+
+    const textarea = await screen.findByLabelText(/ask about the selected clause/i);
+    await user.type(textarea, "What risk does this create?");
+    await user.click(screen.getByRole("button", { name: /ask agent/i }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      /blocked from calling anthropic's compatibility api directly from the browser/i
+    );
   });
 
   it("shows a chat error and restores the draft when the compatible api returns an error", async () => {
