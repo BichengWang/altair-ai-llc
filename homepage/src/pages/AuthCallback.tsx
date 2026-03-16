@@ -13,13 +13,25 @@ export default function AuthCallback() {
 
   useEffect(() => {
     const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+    const callbackErrorCode =
+      searchParams.get("error_code") ??
+      searchParams.get("error") ??
+      hashParams.get("error_code") ??
+      hashParams.get("error");
     const callbackError =
       searchParams.get("error_description") ??
       searchParams.get("error") ??
       hashParams.get("error_description") ??
       hashParams.get("error");
 
-    if (callbackError) {
+    const code = searchParams.get("code");
+    const accessToken = hashParams.get("access_token");
+    const refreshToken = hashParams.get("refresh_token");
+
+    const isRecoverableStateError = callbackErrorCode === "bad_oauth_state";
+    const hasSessionArtifacts = Boolean(code || (accessToken && refreshToken));
+
+    if (callbackError && (!isRecoverableStateError || !hasSessionArtifacts)) {
       setError(callbackError);
       setStatus("Google sign-in did not complete.");
       return;
@@ -32,9 +44,9 @@ export default function AuthCallback() {
     }
 
     const next = searchParams.get("next") || getDefaultSignedInPath();
-    const code = searchParams.get("code");
-    const accessToken = hashParams.get("access_token");
-    const refreshToken = hashParams.get("refresh_token");
+    if (callbackError && isRecoverableStateError) {
+      setStatus("Recovering your Google sign-in session...");
+    }
     let active = true;
     let completed = false;
 

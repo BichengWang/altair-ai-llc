@@ -86,19 +86,25 @@ export function getWorkspaceOrigin(locationLike: LocationLike = window.location)
 }
 
 export function getAuthCallbackPathFromHash(locationLike: LocationLike = window.location) {
-  const hashParams = new URLSearchParams((locationLike.hash ?? "").replace(/^#/, ""));
+  const hash = locationLike.hash ?? "";
+  const search = locationLike.search ?? "";
+  const hashParams = new URLSearchParams(hash.replace(/^#/, ""));
+  const searchParams = new URLSearchParams(search);
   const hasCallbackPayload =
     hashParams.has("access_token") ||
     hashParams.has("refresh_token") ||
     hashParams.has("error") ||
-    hashParams.has("error_description");
+    hashParams.has("error_description") ||
+    searchParams.has("code") ||
+    searchParams.has("error_code") ||
+    searchParams.has("error_description");
 
   if (!hasCallbackPayload || locationLike.pathname === "/auth/callback") {
     return null;
   }
 
   const callbackPath = buildAppPath("/auth/callback", { locationLike });
-  return `${callbackPath}${locationLike.hash ?? ""}`;
+  return `${callbackPath}${search}${hash}`;
 }
 
 export function buildWorkspaceUrl(
