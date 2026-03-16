@@ -7,9 +7,7 @@ const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "::1"]);
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabasePublishableKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
-export const isSupabaseConfigured = Boolean(supabaseUrl && supabasePublishableKey);
-
-export const supabase = isSupabaseConfigured
+export const supabase = supabaseUrl && supabasePublishableKey
   ? createClient<Database>(supabaseUrl, supabasePublishableKey, {
       auth: {
         persistSession: true,
@@ -18,6 +16,7 @@ export const supabase = isSupabaseConfigured
       },
     })
   : null;
+export const isSupabaseConfigured = Boolean(supabase);
 
 export function getMissingConfigMessage() {
   return "Supabase authentication is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY.";

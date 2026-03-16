@@ -23,6 +23,7 @@ export default function WorkspaceEntry() {
       return;
     }
 
+    const client = supabase;
     let active = true;
 
     const run = async () => {
@@ -30,7 +31,7 @@ export default function WorkspaceEntry() {
 
       try {
         const payload = await consumeWorkspaceHandoff(handoffToken);
-        const { error: sessionError } = await supabase.auth.setSession({
+        const { error: sessionError } = await client.auth.setSession({
           access_token: payload.accessToken,
           refresh_token: payload.refreshToken,
         });

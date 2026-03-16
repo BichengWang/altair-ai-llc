@@ -4,6 +4,7 @@ import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import App from "../App";
 import { AuthProvider } from "../context/AuthContext";
+import type { AppUserProfile } from "../types/auth";
 
 type MockUser = {
   id: string;
@@ -50,7 +51,7 @@ function createSession(overrides: Partial<MockSession> = {}): MockSession {
 }
 
 let currentSession: MockSession | null = null;
-let currentProfile = {
+let currentProfile: AppUserProfile = {
   user_id: "user-123",
   email: "member@altair.test",
   full_name: "Altair Member",

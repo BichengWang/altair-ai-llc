@@ -71,13 +71,14 @@ export function AuthProvider({ children }: PropsWithChildren) {
       return;
     }
 
+    const client = supabase;
     let active = true;
 
     const bootstrap = async () => {
       const {
         data: { session: initialSession },
         error,
-      } = await supabase.auth.getSession();
+      } = await client.auth.getSession();
 
       if (!active) {
         return;
@@ -106,7 +107,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_, nextSession) => {
+    } = client.auth.onAuthStateChange((_, nextSession) => {
       startTransition(() => {
         setSession(nextSession);
         setUser(nextSession?.user ?? null);

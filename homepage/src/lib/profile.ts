@@ -26,8 +26,8 @@ export async function fetchProfile(userId: string): Promise<AppUserProfile | nul
     return null;
   }
 
-  const { data, error } = await supabase
-    .from("profiles")
+  const { data, error }: { data: AppUserProfile | null; error: unknown } = await (supabase
+    .from("profiles") as any)
     .select("*")
     .eq("user_id", userId)
     .maybeSingle();
@@ -54,8 +54,8 @@ export async function upsertProfileFromUser(user: User): Promise<AppUserProfile 
     updated_at: new Date().toISOString(),
   };
 
-  const { data, error } = await supabase
-    .from("profiles")
+  const { data, error }: { data: AppUserProfile | null; error: unknown } = await (supabase
+    .from("profiles") as any)
     .upsert(payload, { onConflict: "user_id" })
     .select()
     .single();
