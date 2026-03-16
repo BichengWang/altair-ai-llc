@@ -2,6 +2,8 @@ import { createClient } from "@supabase/supabase-js";
 import type { Database } from "../types/auth";
 import { buildAppPath } from "./runtime";
 
+const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "::1"]);
+
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabasePublishableKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
@@ -27,13 +29,25 @@ export function getGoogleRedirectUrl() {
 
 export function getAuthCallbackUrl() {
   const configuredRedirectUrl = import.meta.env.VITE_AUTH_CALLBACK_URL?.trim();
+  return resolveAuthCallbackUrl(configuredRedirectUrl, window.location);
+}
 
+export function resolveAuthCallbackUrl(
+  configuredRedirectUrl: string | undefined,
+  locationLike: Pick<Location, "origin" | "hostname">
+) {
   if (configuredRedirectUrl) {
-    return new URL(configuredRedirectUrl);
+    const configuredUrl = new URL(configuredRedirectUrl);
+
+    if (!LOCAL_HOSTS.has(locationLike.hostname) && LOCAL_HOSTS.has(configuredUrl.hostname)) {
+      return new URL(configuredUrl.pathname + configuredUrl.search + configuredUrl.hash, locationLike.origin);
+    }
+
+    return configuredUrl;
   }
 
-  const callbackPath = buildAppPath("/auth/callback");
-  return new URL(callbackPath, window.location.origin);
+  const callbackPath = buildAppPath("/auth/callback", { locationLike });
+  return new URL(callbackPath, locationLike.origin);
 }
 
 export function getAuthErrorMessage(error: unknown) {
