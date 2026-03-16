@@ -14,7 +14,7 @@ test("homepage renders with auth entry points", async ({ page }) => {
 test("account route redirects guests to login", async ({ page }) => {
   await page.goto("/account");
 
-  await expect(page).toHaveURL(/\/login$/);
+  await expect(page).toHaveURL(/\/login\?next=%2Faccount$/);
   await expect(page.getByRole("heading", { name: /welcome back to altair/i })).toBeVisible();
 });
 
