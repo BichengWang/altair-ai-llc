@@ -94,6 +94,8 @@ export default function ReviewWorkspace({
       return;
     }
 
+    const doc = uploadedDoc;
+    const viewer = viewerRef.current;
     let isCancelled = false;
 
     async function renderDocument() {
@@ -101,7 +103,7 @@ export default function ReviewWorkspace({
       setUploadError(null);
 
       try {
-        await renderDocxPreview(uploadedDoc.data, viewerRef.current!);
+        await renderDocxPreview(doc.data, viewer);
 
         if (!isCancelled) {
           setSelectedExcerpt(null);
@@ -111,7 +113,7 @@ export default function ReviewWorkspace({
           return;
         }
 
-        viewerRef.current!.innerHTML = "";
+        viewer.innerHTML = "";
         setUploadError(
           error instanceof Error
             ? error.message

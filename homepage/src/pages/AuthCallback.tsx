@@ -43,6 +43,7 @@ export default function AuthCallback() {
       return;
     }
 
+    const client = supabase;
     const next = resolveRedirectPath(searchParams.get("next"), getDefaultSignedInPath());
     let active = true;
     let completed = false;
@@ -67,7 +68,7 @@ export default function AuthCallback() {
     const finishSignIn = async () => {
       try {
         if (code) {
-          const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+          const { error: exchangeError } = await client.auth.exchangeCodeForSession(code);
 
           if (exchangeError) {
             throw exchangeError;
@@ -78,7 +79,7 @@ export default function AuthCallback() {
         }
 
         if (accessToken && refreshToken) {
-          const { error: setSessionError } = await supabase.auth.setSession({
+          const { error: setSessionError } = await client.auth.setSession({
             access_token: accessToken,
             refresh_token: refreshToken,
           });
@@ -94,7 +95,7 @@ export default function AuthCallback() {
         const {
           data: { session },
           error: sessionError,
-        } = await supabase.auth.getSession();
+        } = await client.auth.getSession();
 
         if (sessionError) {
           throw sessionError;
@@ -107,7 +108,7 @@ export default function AuthCallback() {
 
         const {
           data: { subscription },
-        } = supabase.auth.onAuthStateChange((_, nextSession) => {
+        } = client.auth.onAuthStateChange((_, nextSession) => {
           if (!nextSession || completed) {
             return;
           }
