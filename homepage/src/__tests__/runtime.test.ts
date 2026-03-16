@@ -105,6 +105,21 @@ describe("runtime host detection", () => {
     ).toBe("/auth/callback#access_token=test-access&refresh_token=test-refresh");
   });
 
+
+  it("normalizes query-based OAuth callbacks onto the auth callback route", () => {
+    expect(
+      getAuthCallbackPathFromHash({
+        hostname: "localhost",
+        origin: "http://localhost:3000",
+        pathname: "/",
+        search: "?error=invalid_request&error_code=bad_oauth_state&error_description=OAuth+state+not+found+or+expired",
+        hash: "",
+      })
+    ).toBe(
+      "/auth/callback?error=invalid_request&error_code=bad_oauth_state&error_description=OAuth+state+not+found+or+expired"
+    );
+  });
+
   it("returns null when already on the callback route", () => {
     expect(
       getAuthCallbackPathFromHash({

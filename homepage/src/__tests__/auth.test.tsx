@@ -290,6 +290,40 @@ describe("auth flows", () => {
     window.location.hash = "";
   });
 
+  it("recovers from bad_oauth_state when tokens are present", async () => {
+    currentSession = createSession({
+      user: createUser({
+        app_metadata: { provider: "google" },
+        identities: [{ provider: "google" }],
+      }),
+    });
+    currentProfile = {
+      user_id: "user-123",
+      email: "member@altair.test",
+      full_name: "Altair Member",
+      avatar_url: null,
+      auth_provider: "google",
+      created_at: "2026-01-01T00:00:00.000Z",
+      updated_at: "2026-01-02T00:00:00.000Z",
+    };
+    getSessionMock.mockResolvedValue({ data: { session: null }, error: null });
+    upsertSelectSingleMock.mockResolvedValue({ data: currentProfile, error: null });
+    window.location.hash = "#access_token=test-access&refresh_token=test-refresh";
+
+    renderApp([
+      "/auth/callback?error=invalid_request&error_code=bad_oauth_state&error_description=OAuth+state+not+found+or+expired&next=%2Faccount",
+    ]);
+
+    await waitFor(() => {
+      expect(setSessionMock).toHaveBeenCalledWith({
+        access_token: "test-access",
+        refresh_token: "test-refresh",
+      });
+    });
+
+    window.location.hash = "";
+  });
+
   it("signs up with email/password and loads the profile", async () => {
     const user = userEvent.setup();
     const signedUpSession = createSession();
