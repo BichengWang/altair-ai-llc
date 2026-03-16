@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { getDefaultSignedInPath } from "../lib/runtime";
+import { getDefaultSignedInPath, resolveRedirectPath } from "../lib/runtime";
 import { getAuthErrorMessage, getMissingConfigMessage, supabase } from "../lib/supabase";
 
 export default function AuthCallback() {
@@ -43,12 +43,13 @@ export default function AuthCallback() {
       return;
     }
 
-    const next = searchParams.get("next") || getDefaultSignedInPath();
+    const next = resolveRedirectPath(searchParams.get("next"), getDefaultSignedInPath());
+    let active = true;
+    let completed = false;
+
     if (callbackError && isRecoverableStateError) {
       setStatus("Recovering your Google sign-in session...");
     }
-    let active = true;
-    let completed = false;
 
     const completeSignIn = async () => {
       if (!active || completed) {
@@ -155,7 +156,7 @@ export default function AuthCallback() {
               {error}
             </p>
           ) : (
-            <p className="status-banner success">Redirecting you to your account...</p>
+            <p className="status-banner success">Redirecting you now...</p>
           )}
         </div>
       </div>

@@ -18,6 +18,13 @@ type BuildAppPathOptions = {
   locationLike?: LocationLike;
 };
 
+function getLocationOrigin(locationLike: LocationLike) {
+  return (
+    locationLike.origin ||
+    `${locationLike.protocol ?? "https:"}//${locationLike.hostname}${locationLike.port ? `:${locationLike.port}` : ""}`
+  );
+}
+
 export function detectActiveApp(locationLike: LocationLike): ActiveApp {
   const { hostname, search = "" } = locationLike;
 
@@ -46,7 +53,7 @@ export function isLocalWorkspacePreview(locationLike: LocationLike = window.loca
 
 export function buildAppPath(path: string, options: BuildAppPathOptions = {}) {
   const { locationLike = window.location, app = detectActiveApp(locationLike) } = options;
-  const origin = locationLike.origin || `${locationLike.protocol ?? "https:"}//${locationLike.hostname}`;
+  const origin = getLocationOrigin(locationLike);
   const url = new URL(path, origin);
 
   if (app === "workspace" && LOCAL_HOSTS.has(locationLike.hostname)) {
@@ -56,6 +63,52 @@ export function buildAppPath(path: string, options: BuildAppPathOptions = {}) {
   }
 
   return `${url.pathname}${url.search}${url.hash}`;
+}
+
+export function getSafeRedirectPath(
+  path: string | null | undefined,
+  locationLike: LocationLike = window.location
+) {
+  if (!path) {
+    return null;
+  }
+
+  try {
+    const origin = getLocationOrigin(locationLike);
+    const url = new URL(path, origin);
+
+    if (url.origin !== origin || !url.pathname.startsWith("/")) {
+      return null;
+    }
+
+    return `${url.pathname}${url.search}${url.hash}`;
+  } catch {
+    return null;
+  }
+}
+
+export function appendNextSearchParam(
+  path: string,
+  nextPath: string | null | undefined,
+  locationLike: LocationLike = window.location
+) {
+  const safeNextPath = getSafeRedirectPath(nextPath, locationLike);
+
+  if (!safeNextPath) {
+    return path;
+  }
+
+  const url = new URL(path, getLocationOrigin(locationLike));
+  url.searchParams.set("next", safeNextPath);
+  return `${url.pathname}${url.search}${url.hash}`;
+}
+
+export function resolveRedirectPath(
+  nextPath: string | null | undefined,
+  fallbackPath = getDefaultSignedInPath(),
+  locationLike: LocationLike = window.location
+) {
+  return getSafeRedirectPath(nextPath, locationLike) ?? fallbackPath;
 }
 
 export function getDefaultSignedInPath(app = getActiveApp(), locationLike: LocationLike = window.location) {

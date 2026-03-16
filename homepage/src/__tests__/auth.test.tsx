@@ -74,7 +74,15 @@ let authStateChangeHandler: ((event: string, session: MockSession | null) => voi
 
 vi.mock("../lib/supabase", () => ({
   isSupabaseConfigured: true,
-  getGoogleRedirectUrl: () => "http://localhost:5173/auth/callback",
+  getGoogleRedirectUrl: (nextPath?: string) => {
+    const url = new URL("http://localhost:5173/auth/callback");
+
+    if (nextPath) {
+      url.searchParams.set("next", nextPath);
+    }
+
+    return url.toString();
+  },
   getMissingConfigMessage: () => "Missing config",
   getAuthErrorMessage: (error: unknown) =>
     error instanceof Error ? error.message : typeof error === "string" ? error : "Unknown error",
@@ -352,6 +360,30 @@ describe("auth flows", () => {
     expect(screen.getByText("Altair Member")).toBeInTheDocument();
   });
 
+  it("preserves next after email registration when a session is created immediately", async () => {
+    const user = userEvent.setup();
+    const signedUpSession = createSession();
+
+    signUpMock.mockResolvedValue({
+      data: {
+        user: signedUpSession.user,
+        session: signedUpSession,
+      },
+      error: null,
+    });
+
+    renderApp(["/register?next=%2Fcontact"]);
+
+    await screen.findByRole("heading", { name: /create your altair account/i });
+    await user.type(screen.getByLabelText("Full name"), "Altair Member");
+    await user.type(screen.getByLabelText("Email"), "member@altair.test");
+    await user.type(screen.getByLabelText(/^Password$/), "password123");
+    await user.type(screen.getByLabelText("Confirm password"), "password123");
+    await user.click(screen.getByRole("button", { name: "Create account" }));
+
+    expect(await screen.findByRole("heading", { name: /talk with the altair team/i })).toBeInTheDocument();
+  });
+
   it("signs in with email/password and restores the session", async () => {
     const user = userEvent.setup();
     const signedInSession = createSession();
@@ -389,7 +421,23 @@ describe("auth flows", () => {
     expect(signInWithOAuthMock).toHaveBeenCalledWith({
       provider: "google",
       options: {
-        redirectTo: "http://localhost:5173/auth/callback",
+        redirectTo: "http://localhost:5173/auth/callback?next=%2Faccount",
+      },
+    });
+  });
+
+  it("preserves next when starting Google OAuth from the login screen", async () => {
+    const user = userEvent.setup();
+
+    renderApp(["/login?next=%2Fcontact"]);
+
+    await screen.findByRole("heading", { name: /welcome back to altair/i });
+    await user.click(screen.getByRole("button", { name: "Continue with Google" }));
+
+    expect(signInWithOAuthMock).toHaveBeenCalledWith({
+      provider: "google",
+      options: {
+        redirectTo: "http://localhost:5173/auth/callback?next=%2Fcontact",
       },
     });
   });
