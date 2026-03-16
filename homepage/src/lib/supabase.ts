@@ -4,6 +4,14 @@ import { appendNextSearchParam, buildAppPath } from "./runtime";
 
 const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "::1"]);
 
+function isLikelyInvalidSupabasePath(url: URL) {
+  const isSupabaseHost = /(^|\.)supabase\.co$/i.test(url.hostname);
+  const leadingPathSegment = url.pathname.replace(/^\/+/, "").split("/")[0];
+  const looksLikeDomainSegment = /^[a-z0-9.-]+\.[a-z]{2,}$/i.test(leadingPathSegment);
+
+  return isSupabaseHost && looksLikeDomainSegment;
+}
+
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabasePublishableKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
@@ -36,8 +44,17 @@ export function resolveAuthCallbackUrl(
   locationLike: Pick<Location, "origin" | "hostname">,
   nextPath?: string
 ) {
+  const fallbackCallback = appendNextSearchParam(
+    buildAppPath("/auth/callback", { locationLike }),
+    nextPath
+  );
+
   if (configuredRedirectUrl) {
     const configuredUrl = new URL(appendNextSearchParam(configuredRedirectUrl, nextPath));
+
+    if (isLikelyInvalidSupabasePath(configuredUrl)) {
+      return new URL(fallbackCallback, locationLike.origin);
+    }
 
     if (!LOCAL_HOSTS.has(locationLike.hostname) && LOCAL_HOSTS.has(configuredUrl.hostname)) {
       return new URL(configuredUrl.pathname + configuredUrl.search + configuredUrl.hash, locationLike.origin);
@@ -46,11 +63,7 @@ export function resolveAuthCallbackUrl(
     return configuredUrl;
   }
 
-  const callbackPath = appendNextSearchParam(
-    buildAppPath("/auth/callback", { locationLike }),
-    nextPath
-  );
-  return new URL(callbackPath, locationLike.origin);
+  return new URL(fallbackCallback, locationLike.origin);
 }
 
 export function getAuthErrorMessage(error: unknown) {

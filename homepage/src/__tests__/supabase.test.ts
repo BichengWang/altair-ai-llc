@@ -28,4 +28,13 @@ describe("resolveAuthCallbackUrl", () => {
 
     expect(callbackUrl.toString()).toBe("https://altairworld.com/auth/callback");
   });
+
+  it("falls back to the app callback when configured url points to an invalid Supabase path", () => {
+    const callbackUrl = resolveAuthCallbackUrl("https://project-ref.supabase.co/altairworld.com", {
+      origin: "https://altairworld.com",
+      hostname: "altairworld.com",
+    });
+
+    expect(callbackUrl.toString()).toBe("https://altairworld.com/auth/callback");
+  });
 });
