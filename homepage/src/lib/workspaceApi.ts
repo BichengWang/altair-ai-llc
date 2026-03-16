@@ -17,6 +17,16 @@ function getWorkspaceApiBaseUrl() {
   return `${supabaseUrl.replace(/\/$/, "")}/functions/v1/workspace-api`;
 }
 
+function getSupabasePublishableKey() {
+  const supabasePublishableKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
+  if (!supabasePublishableKey) {
+    throw new Error("Supabase publishable key is not configured.");
+  }
+
+  return supabasePublishableKey;
+}
+
 async function parseWorkspaceResponse<T>(response: Response): Promise<T> {
   const payload = await response.json().catch(() => ({}));
 
@@ -42,17 +52,32 @@ async function workspaceRequest<T>(
   } = {}
 ) {
   const { method = "GET", body, session } = options;
-  const headers = new Headers({ "Content-Type": "application/json" });
+  const headers = new Headers({
+    "Content-Type": "application/json",
+    apikey: getSupabasePublishableKey(),
+  });
 
   if (session?.access_token) {
     headers.set("Authorization", `Bearer ${session.access_token}`);
   }
 
-  const response = await fetch(`${getWorkspaceApiBaseUrl()}${path}`, {
-    method,
-    headers,
-    body: body ? JSON.stringify(body) : undefined,
-  });
+  let response: Response;
+
+  try {
+    response = await fetch(`${getWorkspaceApiBaseUrl()}${path}`, {
+      method,
+      headers,
+      body: body ? JSON.stringify(body) : undefined,
+    });
+  } catch (error) {
+    if (error instanceof TypeError) {
+      throw new Error(
+        "Unable to reach the workspace service. Verify your Supabase URL and CORS settings, then try again."
+      );
+    }
+
+    throw error;
+  }
 
   return parseWorkspaceResponse<T>(response);
 }
