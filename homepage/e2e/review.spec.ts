@@ -56,9 +56,7 @@ test("review workspace uploads a docx and asks the agent about the selected clau
     viewer.dispatchEvent(new MouseEvent("mouseup", { bubbles: true }));
   });
 
-  await expect(
-    page.getByText("Highlighted excerpt", { exact: true })
-  ).toBeVisible();
+  await expect(page.getByText("Using selection", { exact: true })).toBeVisible();
   await page
     .getByLabel("Ask about the selected clause")
     .fill("What right does the customer have?");

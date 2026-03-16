@@ -82,6 +82,12 @@ export async function requestReviewResponse({
     });
   } catch (error) {
     if (error instanceof TypeError) {
+      if (isAnthropicCompatibilityUrl(baseUrl)) {
+        throw new Error(
+          `The current origin (${window.location.origin}) is blocked from calling Anthropic's compatibility API directly from the browser. Use a server-side proxy, or switch the review connection to an OpenAI-compatible endpoint that allows this origin.`
+        );
+      }
+
       throw new Error(
         "Compatible API request failed from the browser. Check the base URL and whether that provider allows your current origin."
       );
@@ -124,7 +130,28 @@ export async function requestReviewResponse({
 }
 
 function normalizeBaseUrl(value: string): string {
-  return value.replace(/\/+$/, "");
+  const trimmed = value.trim().replace(/\/+$/, "");
+
+  if (!trimmed) {
+    return trimmed;
+  }
+
+  try {
+    const url = new URL(trimmed);
+    const pathname = url.pathname.replace(/\/+$/, "") || "";
+
+    if (
+      (url.hostname === "api.openai.com" || url.hostname === "api.anthropic.com") &&
+      pathname === ""
+    ) {
+      url.pathname = "/v1";
+      return url.toString().replace(/\/+$/, "");
+    }
+  } catch {
+    return trimmed;
+  }
+
+  return trimmed;
 }
 
 async function parseResponseBody(response: Response): Promise<ParsedResponseBody> {
@@ -153,4 +180,8 @@ function inferHtmlError(rawText: string): string | null {
   }
 
   return "Compatible API returned HTML instead of JSON. This usually means the base URL is wrong (for example, pointed at a website instead of an API endpoint).";
+}
+
+function isAnthropicCompatibilityUrl(baseUrl: string) {
+  return /(^https?:\/\/)?api\.anthropic\.com\b/i.test(normalizeBaseUrl(baseUrl));
 }

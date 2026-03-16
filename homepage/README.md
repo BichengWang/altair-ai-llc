@@ -79,8 +79,9 @@ The workspace function exposes these routes under `workspace-api`:
 
 - Visit `/review` to open the DOCX review workspace.
 - Visit `/review/settings` to store the provider connection used by the review workspace in this browser.
-- The chat uses an OpenAI-compatible endpoint by default: `https://api.openai.com/v1`.
-- Saved settings override fallback env vars. Supported env vars are `VITE_LLM_API_KEY`, `VITE_LLM_MODEL`, `VITE_LLM_BASE_URL`, plus `VITE_ANTHROPIC_API_KEY` and `VITE_ANTHROPIC_MODEL`.
+- The chat uses an OpenAI-compatible `/chat/completions` endpoint.
+- If only `VITE_ANTHROPIC_API_KEY` is set, the review workspace now defaults to `https://api.anthropic.com/v1` and `claude-sonnet-4-20250514`.
+- Saved settings override fallback env vars. Supported env vars are `VITE_LLM_API_KEY`, `VITE_LLM_MODEL`, `VITE_LLM_BASE_URL`, plus `VITE_ANTHROPIC_API_KEY`, `VITE_ANTHROPIC_MODEL`, and `VITE_ANTHROPIC_API_URL`.
 - The left panel uses a standard DOCX renderer; highlight text in the document to set chat context.
 - The chat currently sends only the highlighted excerpt, not the full document.
 
