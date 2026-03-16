@@ -197,7 +197,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
     return data;
   };
 
-  const signInWithGoogle = async () => {
+  const signInWithGoogle = async (nextPath?: string) => {
     if (!supabase) {
       throw new Error(getMissingConfigMessage());
     }
@@ -207,7 +207,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: getGoogleRedirectUrl(),
+        redirectTo: getGoogleRedirectUrl(nextPath),
       },
     });
 

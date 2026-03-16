@@ -1,6 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "../types/auth";
-import { buildAppPath } from "./runtime";
+import { appendNextSearchParam, buildAppPath } from "./runtime";
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabasePublishableKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
@@ -21,18 +21,18 @@ export function getMissingConfigMessage() {
   return "Supabase authentication is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY.";
 }
 
-export function getGoogleRedirectUrl() {
-  return getAuthCallbackUrl().toString();
+export function getGoogleRedirectUrl(nextPath?: string) {
+  return getAuthCallbackUrl(nextPath).toString();
 }
 
-export function getAuthCallbackUrl() {
+export function getAuthCallbackUrl(nextPath?: string) {
   const configuredRedirectUrl = import.meta.env.VITE_AUTH_CALLBACK_URL?.trim();
 
   if (configuredRedirectUrl) {
-    return new URL(configuredRedirectUrl);
+    return new URL(appendNextSearchParam(configuredRedirectUrl, nextPath));
   }
 
-  const callbackPath = buildAppPath("/auth/callback");
+  const callbackPath = appendNextSearchParam(buildAppPath("/auth/callback"), nextPath);
   return new URL(callbackPath, window.location.origin);
 }
 
