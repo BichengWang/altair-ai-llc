@@ -1,7 +1,12 @@
 import { FormEvent, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { buildAppPath, getDefaultSignedInPath } from "../lib/runtime";
+import {
+  appendNextSearchParam,
+  buildAppPath,
+  getDefaultSignedInPath,
+  resolveRedirectPath,
+} from "../lib/runtime";
 import { getAuthErrorMessage, getMissingConfigMessage } from "../lib/supabase";
 
 const MIN_PASSWORD_LENGTH = 8;
@@ -12,6 +17,8 @@ function isValidEmail(value: string) {
 
 export default function Register() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
   const { authConfigured, authError, clearAuthError, signInWithGoogle, signUp } = useAuth();
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -20,6 +27,10 @@ export default function Register() {
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const from = resolveRedirectPath(
+    searchParams.get("next") ?? (typeof location.state?.from === "string" ? location.state.from : null),
+    getDefaultSignedInPath()
+  );
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -57,7 +68,7 @@ export default function Register() {
       });
 
       if (result.session) {
-        navigate(getDefaultSignedInPath(), { replace: true });
+        navigate(from, { replace: true });
         return;
       }
 
@@ -78,7 +89,7 @@ export default function Register() {
     setSubmitting(true);
 
     try {
-      await signInWithGoogle();
+      await signInWithGoogle(from);
     } catch (error) {
       setErrorMessage(getAuthErrorMessage(error));
       setSubmitting(false);
@@ -181,7 +192,11 @@ export default function Register() {
           </button>
           <p className="auth-switch">
             Already registered?{" "}
-            <Link className="text-link" to={buildAppPath("/login")}>
+            <Link
+              className="text-link"
+              to={appendNextSearchParam(buildAppPath("/login"), from)}
+              state={{ from }}
+            >
               Sign in
             </Link>
           </p>

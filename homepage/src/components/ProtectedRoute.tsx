@@ -1,5 +1,6 @@
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { appendNextSearchParam } from "../lib/runtime";
 
 type ProtectedRouteProps = {
   redirectTo?: string;
@@ -8,6 +9,7 @@ type ProtectedRouteProps = {
 export default function ProtectedRoute({ redirectTo = "/login" }: ProtectedRouteProps) {
   const { loading, user } = useAuth();
   const location = useLocation();
+  const from = `${location.pathname}${location.search}${location.hash}`;
 
   if (loading) {
     return (
@@ -20,9 +22,9 @@ export default function ProtectedRoute({ redirectTo = "/login" }: ProtectedRoute
   if (!user) {
     return (
       <Navigate
-        to={redirectTo}
+        to={appendNextSearchParam(redirectTo, from)}
         replace
-        state={{ from: `${location.pathname}${location.search}${location.hash}` }}
+        state={{ from }}
       />
     );
   }

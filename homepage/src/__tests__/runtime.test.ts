@@ -1,10 +1,13 @@
 import { describe, expect, it } from "vitest";
 import {
+  appendNextSearchParam,
   buildAppPath,
   buildWorkspaceUrl,
   detectActiveApp,
   getAuthCallbackPathFromHash,
   getDefaultSignedInPath,
+  getSafeRedirectPath,
+  resolveRedirectPath,
 } from "../lib/runtime";
 
 describe("runtime host detection", () => {
@@ -130,5 +133,41 @@ describe("runtime host detection", () => {
         hash: "#access_token=test-access&refresh_token=test-refresh",
       })
     ).toBeNull();
+  });
+
+  it("preserves only same-origin redirect paths", () => {
+    const locationLike = {
+      hostname: "localhost",
+      origin: "http://localhost:5173",
+      search: "",
+    };
+
+    expect(getSafeRedirectPath("/chat?app=workspace", locationLike)).toBe("/chat?app=workspace");
+    expect(getSafeRedirectPath("https://evil.example/phish", locationLike)).toBeNull();
+    expect(getSafeRedirectPath("//evil.example/phish", locationLike)).toBeNull();
+  });
+
+  it("adds next params only for safe internal paths", () => {
+    const locationLike = {
+      hostname: "localhost",
+      origin: "http://localhost:5173",
+      search: "",
+    };
+
+    expect(appendNextSearchParam("/login", "/chat?app=workspace", locationLike)).toBe(
+      "/login?next=%2Fchat%3Fapp%3Dworkspace"
+    );
+    expect(appendNextSearchParam("/login", "https://evil.example/phish", locationLike)).toBe("/login");
+  });
+
+  it("falls back to the signed-in default when next is unsafe", () => {
+    const locationLike = {
+      hostname: "localhost",
+      origin: "http://localhost:5173",
+      search: "",
+    };
+
+    expect(resolveRedirectPath("/contact", "/account", locationLike)).toBe("/contact");
+    expect(resolveRedirectPath("https://evil.example/phish", "/account", locationLike)).toBe("/account");
   });
 });

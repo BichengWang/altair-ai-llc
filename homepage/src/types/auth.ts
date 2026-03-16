@@ -65,6 +65,6 @@ export interface AuthContextValue {
   refreshProfile: () => Promise<void>;
   signUp: (payload: SignUpPayload) => Promise<AuthMethodResult>;
   signIn: (payload: SignInPayload) => Promise<AuthMethodResult>;
-  signInWithGoogle: () => Promise<void>;
+  signInWithGoogle: (nextPath?: string) => Promise<void>;
   signOut: () => Promise<void>;
 }

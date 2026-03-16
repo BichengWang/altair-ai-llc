@@ -1,7 +1,12 @@
 import { FormEvent, useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { buildAppPath, getDefaultSignedInPath } from "../lib/runtime";
+import {
+  appendNextSearchParam,
+  buildAppPath,
+  getDefaultSignedInPath,
+  resolveRedirectPath,
+} from "../lib/runtime";
 import { getAuthErrorMessage, getMissingConfigMessage } from "../lib/supabase";
 
 function isValidEmail(value: string) {
@@ -11,14 +16,17 @@ function isValidEmail(value: string) {
 export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams] = useSearchParams();
   const { authConfigured, authError, clearAuthError, signIn, signInWithGoogle } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
-  const from =
-    typeof location.state?.from === "string" ? location.state.from : getDefaultSignedInPath();
+  const from = resolveRedirectPath(
+    searchParams.get("next") ?? (typeof location.state?.from === "string" ? location.state.from : null),
+    getDefaultSignedInPath()
+  );
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -53,7 +61,7 @@ export default function Login() {
     setSubmitting(true);
 
     try {
-      await signInWithGoogle();
+      await signInWithGoogle(from);
     } catch (error) {
       setMessage(getAuthErrorMessage(error));
       setSubmitting(false);
@@ -137,7 +145,11 @@ export default function Login() {
           </button>
           <p className="auth-switch">
             New here?{" "}
-            <Link className="text-link" to={buildAppPath("/register")}>
+            <Link
+              className="text-link"
+              to={appendNextSearchParam(buildAppPath("/register"), from)}
+              state={{ from }}
+            >
               Create an account
             </Link>
           </p>

@@ -1,6 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "../types/auth";
-import { buildAppPath } from "./runtime";
+import { appendNextSearchParam, buildAppPath } from "./runtime";
 
 const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "::1"]);
 
@@ -23,21 +23,22 @@ export function getMissingConfigMessage() {
   return "Supabase authentication is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY.";
 }
 
-export function getGoogleRedirectUrl() {
-  return getAuthCallbackUrl().toString();
+export function getGoogleRedirectUrl(nextPath?: string) {
+  return getAuthCallbackUrl(nextPath).toString();
 }
 
-export function getAuthCallbackUrl() {
+export function getAuthCallbackUrl(nextPath?: string) {
   const configuredRedirectUrl = import.meta.env.VITE_AUTH_CALLBACK_URL?.trim();
-  return resolveAuthCallbackUrl(configuredRedirectUrl, window.location);
+  return resolveAuthCallbackUrl(configuredRedirectUrl, window.location, nextPath);
 }
 
 export function resolveAuthCallbackUrl(
   configuredRedirectUrl: string | undefined,
-  locationLike: Pick<Location, "origin" | "hostname">
+  locationLike: Pick<Location, "origin" | "hostname">,
+  nextPath?: string
 ) {
   if (configuredRedirectUrl) {
-    const configuredUrl = new URL(configuredRedirectUrl);
+    const configuredUrl = new URL(appendNextSearchParam(configuredRedirectUrl, nextPath));
 
     if (!LOCAL_HOSTS.has(locationLike.hostname) && LOCAL_HOSTS.has(configuredUrl.hostname)) {
       return new URL(configuredUrl.pathname + configuredUrl.search + configuredUrl.hash, locationLike.origin);
@@ -46,7 +47,10 @@ export function resolveAuthCallbackUrl(
     return configuredUrl;
   }
 
-  const callbackPath = buildAppPath("/auth/callback", { locationLike });
+  const callbackPath = appendNextSearchParam(
+    buildAppPath("/auth/callback", { locationLike }),
+    nextPath
+  );
   return new URL(callbackPath, locationLike.origin);
 }
 
