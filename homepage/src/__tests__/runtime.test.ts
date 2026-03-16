@@ -41,7 +41,17 @@ describe("runtime host detection", () => {
     ).toBe("marketing");
   });
 
-  it("builds handoff URLs against the llm subdomain", () => {
+  it("detects workspace routes by app query on production hosts", () => {
+    expect(
+      detectActiveApp({
+        hostname: "altairworld.com",
+        origin: "https://altairworld.com",
+        search: "?app=workspace",
+      })
+    ).toBe("workspace");
+  });
+
+  it("builds handoff URLs against the current origin by default", () => {
     expect(
       buildWorkspaceUrl("/chat", {
         handoffToken: "handoff-123",
@@ -52,7 +62,7 @@ describe("runtime host detection", () => {
           search: "",
         },
       })
-    ).toBe("https://llm.altair.test/chat?handoff=handoff-123");
+    ).toBe("https://www.altair.test/chat?app=workspace&handoff=handoff-123");
   });
 
   it("uses host-aware default signed-in destinations", () => {
@@ -72,7 +82,7 @@ describe("runtime host detection", () => {
     ).toBe("/chat?app=workspace");
   });
 
-  it("keeps marketing localhost paths clean and scopes workspace localhost paths", () => {
+  it("keeps marketing paths clean and scopes workspace paths off llm subdomains", () => {
     expect(
       buildAppPath("/account", {
         app: "marketing",
@@ -88,12 +98,23 @@ describe("runtime host detection", () => {
       buildAppPath("/chat", {
         app: "workspace",
         locationLike: {
-          hostname: "localhost",
-          origin: "http://localhost:5173",
+          hostname: "www.altair.test",
+          origin: "https://www.altair.test",
           search: "",
         },
       })
     ).toBe("/chat?app=workspace");
+
+    expect(
+      buildAppPath("/chat", {
+        app: "workspace",
+        locationLike: {
+          hostname: "llm.altair.test",
+          origin: "https://llm.altair.test",
+          search: "",
+        },
+      })
+    ).toBe("/chat");
   });
 
   it("normalizes hash-only OAuth callbacks onto the auth callback route", () => {

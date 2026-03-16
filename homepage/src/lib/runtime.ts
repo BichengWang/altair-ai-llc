@@ -27,17 +27,14 @@ function getLocationOrigin(locationLike: LocationLike) {
 
 export function detectActiveApp(locationLike: LocationLike): ActiveApp {
   const { hostname, search = "" } = locationLike;
+  const searchParams = new URLSearchParams(search);
 
-  if (hostname === "llm" || hostname.startsWith("llm.")) {
+  if (searchParams.get("app") === WORKSPACE_QUERY_VALUE) {
     return "workspace";
   }
 
-  if (LOCAL_HOSTS.has(hostname)) {
-    const searchParams = new URLSearchParams(search);
-
-    if (searchParams.get("app") === WORKSPACE_QUERY_VALUE) {
-      return "workspace";
-    }
+  if (hostname === "llm" || hostname.startsWith("llm.")) {
+    return "workspace";
   }
 
   return "marketing";
@@ -56,7 +53,9 @@ export function buildAppPath(path: string, options: BuildAppPathOptions = {}) {
   const origin = getLocationOrigin(locationLike);
   const url = new URL(path, origin);
 
-  if (app === "workspace" && LOCAL_HOSTS.has(locationLike.hostname)) {
+  const shouldScopeWorkspacePath = app === "workspace" && !locationLike.hostname.startsWith("llm.") && locationLike.hostname !== "llm";
+
+  if (shouldScopeWorkspacePath) {
     url.searchParams.set("app", WORKSPACE_QUERY_VALUE);
   } else {
     url.searchParams.delete("app");
@@ -128,14 +127,7 @@ export function getWorkspaceOrigin(locationLike: LocationLike = window.location)
     return origin.replace(/\/$/, "");
   }
 
-  if (LOCAL_HOSTS.has(hostname)) {
-    const localOrigin = `${protocol}//${hostname}${port ? `:${port}` : ""}`;
-    return localOrigin.replace(/\/$/, "");
-  }
-
-  const [subdomain, ...rest] = hostname.split(".");
-  const workspaceHost = subdomain === "www" ? `llm.${rest.join(".")}` : `llm.${hostname}`;
-  return `${protocol}//${workspaceHost}${port ? `:${port}` : ""}`.replace(/\/$/, "");
+  return `${protocol}//${hostname}${port ? `:${port}` : ""}`.replace(/\/$/, "");
 }
 
 export function getAuthCallbackPathFromHash(locationLike: LocationLike = window.location) {
@@ -172,7 +164,8 @@ export function buildWorkspaceUrl(
   const normalizedPath = path.startsWith("/") ? path : `/${path}`;
   const url = new URL(`${origin}${normalizedPath}`);
 
-  if (LOCAL_HOSTS.has(locationLike.hostname)) {
+  const workspaceHost = new URL(origin).hostname;
+  if (workspaceHost !== "llm" && !workspaceHost.startsWith("llm.")) {
     url.searchParams.set("app", WORKSPACE_QUERY_VALUE);
   }
 
