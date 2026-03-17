@@ -130,6 +130,11 @@ export function getDefaultSignedInPath(app = getActiveApp(), locationLike: Locat
 
 export function getWorkspaceOrigin(locationLike: LocationLike = window.location) {
   const configuredOrigin = import.meta.env.VITE_WORKSPACE_ORIGIN;
+  const isLocalHost = LOCAL_HOSTS.has(locationLike.hostname);
+
+  if (isLocalHost) {
+    return locationLike.origin.replace(/\/$/, "");
+  }
 
   if (configuredOrigin) {
     return configuredOrigin.replace(/\/$/, "");
