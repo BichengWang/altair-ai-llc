@@ -4,6 +4,19 @@ import { appendNextSearchParam, buildAppPath } from "./runtime";
 
 const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "::1"]);
 
+function isValidUrl(value: string | undefined) {
+  if (!value) {
+    return false;
+  }
+
+  try {
+    const url = new URL(value);
+    return url.protocol === "http:" || url.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
 function isLikelyInvalidSupabasePath(url: URL) {
   const isSupabaseHost = /(^|\.)supabase\.co$/i.test(url.hostname);
   const leadingPathSegment = url.pathname.replace(/^\/+/, "").split("/")[0];
@@ -12,10 +25,32 @@ function isLikelyInvalidSupabasePath(url: URL) {
   return isSupabaseHost && looksLikeDomainSegment;
 }
 
+function isPlaceholderSupabaseUrl(value: string | undefined) {
+  if (!isValidUrl(value)) {
+    return false;
+  }
+
+  const url = new URL(value!);
+  return url.hostname === "your-project-ref.supabase.co";
+}
+
+function isPlaceholderPublishableKey(value: string | undefined) {
+  if (!value) {
+    return false;
+  }
+
+  return value.trim() === "your-publishable-key";
+}
+
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabasePublishableKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+const hasValidSupabaseConfig =
+  isValidUrl(supabaseUrl) &&
+  !isPlaceholderSupabaseUrl(supabaseUrl) &&
+  Boolean(supabasePublishableKey?.trim()) &&
+  !isPlaceholderPublishableKey(supabasePublishableKey);
 
-export const supabase = supabaseUrl && supabasePublishableKey
+export const supabase = hasValidSupabaseConfig
   ? createClient<Database>(supabaseUrl, supabasePublishableKey, {
       auth: {
         persistSession: true,
@@ -27,7 +62,7 @@ export const supabase = supabaseUrl && supabasePublishableKey
 export const isSupabaseConfigured = Boolean(supabase);
 
 export function getMissingConfigMessage() {
-  return "Supabase authentication is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY.";
+  return "Supabase authentication is not configured. Replace the placeholder VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY values with a real Supabase project.";
 }
 
 export function getGoogleRedirectUrl(nextPath?: string) {
@@ -50,10 +85,25 @@ export function resolveAuthCallbackUrl(
   );
 
   if (configuredRedirectUrl) {
-    const configuredUrl = new URL(appendNextSearchParam(configuredRedirectUrl, nextPath));
+    const configuredUrl = new URL(configuredRedirectUrl);
+
+    if (nextPath) {
+      const safeNextPath = appendNextSearchParam(configuredUrl.pathname + configuredUrl.search + configuredUrl.hash, nextPath);
+      const nextUrl = new URL(safeNextPath, configuredUrl.origin);
+      configuredUrl.search = nextUrl.search;
+      configuredUrl.hash = nextUrl.hash;
+    }
 
     if (isLikelyInvalidSupabasePath(configuredUrl)) {
       return new URL(fallbackCallback, locationLike.origin);
+    }
+
+    if (
+      LOCAL_HOSTS.has(locationLike.hostname) &&
+      LOCAL_HOSTS.has(configuredUrl.hostname) &&
+      configuredUrl.origin !== locationLike.origin
+    ) {
+      return new URL(configuredUrl.pathname + configuredUrl.search + configuredUrl.hash, locationLike.origin);
     }
 
     if (!LOCAL_HOSTS.has(locationLike.hostname) && LOCAL_HOSTS.has(configuredUrl.hostname)) {

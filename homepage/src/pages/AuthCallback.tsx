@@ -33,7 +33,7 @@ export default function AuthCallback() {
 
     if (callbackError && (!isRecoverableStateError || !hasSessionArtifacts)) {
       setError(callbackError);
-      setStatus("Google sign-in did not complete.");
+      setStatus("OAuth sign-in did not complete.");
       return;
     }
 
@@ -49,7 +49,7 @@ export default function AuthCallback() {
     let completed = false;
 
     if (callbackError && isRecoverableStateError) {
-      setStatus("Recovering your Google sign-in session...");
+      setStatus("Recovering your OAuth sign-in session...");
     }
 
     const completeSignIn = async () => {
@@ -122,8 +122,8 @@ export default function AuthCallback() {
           subscription.unsubscribe();
 
           if (!completed && active) {
-            setError("The Google callback did not produce a Supabase session.");
-            setStatus("Google sign-in did not complete.");
+            setError("The OAuth callback did not produce a Supabase session.");
+            setStatus("OAuth sign-in did not complete.");
           }
         }, 3000);
       } catch (caughtError) {
@@ -132,7 +132,7 @@ export default function AuthCallback() {
         }
 
         setError(getAuthErrorMessage(caughtError));
-        setStatus("Google sign-in did not complete.");
+        setStatus("OAuth sign-in did not complete.");
       }
     };
 
@@ -150,7 +150,7 @@ export default function AuthCallback() {
           <span className="pill">Auth callback</span>
           <h1 className="section-title">{status}</h1>
           <p className="section-subtitle">
-            We are finishing the return from Google and syncing your profile record.
+            We are finishing the Supabase OAuth return and syncing your profile record.
           </p>
           {error ? (
             <p className="status-banner error" role="alert">

@@ -102,6 +102,20 @@ export function appendNextSearchParam(
   return `${url.pathname}${url.search}${url.hash}`;
 }
 
+export function buildOAuthConsentPath(
+  authorizationId: string,
+  options: {
+    app?: ActiveApp;
+    locationLike?: LocationLike;
+  } = {}
+) {
+  const { locationLike = window.location, app = detectActiveApp(locationLike) } = options;
+  const basePath = buildAppPath("/oauth/consent", { app, locationLike });
+  const url = new URL(basePath, getLocationOrigin(locationLike));
+  url.searchParams.set("authorization_id", authorizationId);
+  return `${url.pathname}${url.search}${url.hash}`;
+}
+
 export function resolveRedirectPath(
   nextPath: string | null | undefined,
   fallbackPath = getDefaultSignedInPath(),
