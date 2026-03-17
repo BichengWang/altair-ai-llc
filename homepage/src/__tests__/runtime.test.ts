@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   appendNextSearchParam,
   buildAppPath,
@@ -12,6 +12,10 @@ import {
 } from "../lib/runtime";
 
 describe("runtime host detection", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
   it("detects the workspace app from the llm subdomain", () => {
     expect(
       detectActiveApp({
@@ -64,6 +68,21 @@ describe("runtime host detection", () => {
         },
       })
     ).toBe("https://www.altair.test/chat?app=workspace&handoff=handoff-123");
+  });
+
+  it("keeps workspace redirects on localhost even when a production workspace origin is configured", () => {
+    vi.stubEnv("VITE_WORKSPACE_ORIGIN", "https://llm.altairworld.com");
+
+    expect(
+      buildWorkspaceUrl("/login", {
+        locationLike: {
+          hostname: "localhost",
+          origin: "http://localhost:5173",
+          protocol: "http:",
+          search: "",
+        },
+      })
+    ).toBe("http://localhost:5173/login?app=workspace");
   });
 
   it("uses host-aware default signed-in destinations", () => {

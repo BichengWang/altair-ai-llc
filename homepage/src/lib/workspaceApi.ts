@@ -7,6 +7,11 @@ import type {
   WorkspaceKeyListResponse,
 } from "../types/workspace";
 
+const WORKSPACE_UNREACHABLE_MESSAGE =
+  "Unable to reach the workspace service. Verify your Supabase URL and CORS settings, then try again.";
+const WORKSPACE_NOT_DEPLOYED_MESSAGE =
+  "The workspace service is not deployed for this Supabase project. Deploy the `workspace-api` Edge Function, then try again.";
+
 function getWorkspaceApiBaseUrl() {
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 
@@ -43,6 +48,27 @@ async function parseWorkspaceResponse<T>(response: Response): Promise<T> {
   return payload as T;
 }
 
+async function diagnoseWorkspaceConnectionFailure(baseUrl: string) {
+  try {
+    const response = await fetch(baseUrl, { method: "GET" });
+    const payload = await response.json().catch(() => ({}));
+    const message =
+      typeof payload?.error === "string"
+        ? payload.error
+        : typeof payload?.message === "string"
+          ? payload.message
+          : "";
+
+    if (response.status === 404 && /requested function was not found/i.test(message)) {
+      return WORKSPACE_NOT_DEPLOYED_MESSAGE;
+    }
+  } catch {
+    // Keep the generic message when the diagnostic probe cannot reach the service either.
+  }
+
+  return WORKSPACE_UNREACHABLE_MESSAGE;
+}
+
 async function workspaceRequest<T>(
   path: string,
   options: {
@@ -53,9 +79,14 @@ async function workspaceRequest<T>(
 ) {
   const { method = "GET", body, session } = options;
   const headers = new Headers({
-    "Content-Type": "application/json",
     apikey: getSupabasePublishableKey(),
   });
+
+  if (body) {
+    headers.set("Content-Type", "application/json");
+  }
+
+  const workspaceApiBaseUrl = getWorkspaceApiBaseUrl();
 
   if (session?.access_token) {
     headers.set("Authorization", `Bearer ${session.access_token}`);
@@ -64,16 +95,14 @@ async function workspaceRequest<T>(
   let response: Response;
 
   try {
-    response = await fetch(`${getWorkspaceApiBaseUrl()}${path}`, {
+    response = await fetch(`${workspaceApiBaseUrl}${path}`, {
       method,
       headers,
       body: body ? JSON.stringify(body) : undefined,
     });
   } catch (error) {
     if (error instanceof TypeError) {
-      throw new Error(
-        "Unable to reach the workspace service. Verify your Supabase URL and CORS settings, then try again."
-      );
+      throw new Error(await diagnoseWorkspaceConnectionFailure(workspaceApiBaseUrl));
     }
 
     throw error;
