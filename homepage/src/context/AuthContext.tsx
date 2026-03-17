@@ -10,6 +10,7 @@ import {
 } from "react";
 import type { User } from "@supabase/supabase-js";
 import { deriveProfileFromUser, fetchProfile, upsertProfileFromUser } from "../lib/profile";
+import { navigateToUrl } from "../lib/browser";
 import {
   getAuthErrorMessage,
   getGoogleRedirectUrl,
@@ -17,13 +18,7 @@ import {
   isSupabaseConfigured,
   supabase,
 } from "../lib/supabase";
-import type {
-  AppUserProfile,
-  AuthContextValue,
-  AuthMethodResult,
-  SignInPayload,
-  SignUpPayload,
-} from "../types/auth";
+import type { AppUserProfile, AuthContextValue } from "../types/auth";
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
@@ -131,73 +126,6 @@ export function AuthProvider({ children }: PropsWithChildren) {
     };
   }, [applySignedInUser]);
 
-  const signUp = async ({ email, password, fullName }: SignUpPayload): Promise<AuthMethodResult> => {
-    if (!supabase) {
-      throw new Error(getMissingConfigMessage());
-    }
-
-    setAuthError(null);
-
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: window.location.origin,
-        data: {
-          full_name: fullName,
-          name: fullName,
-        },
-      },
-    });
-
-    if (error) {
-      const message = getAuthErrorMessage(error);
-      setAuthError(message);
-      throw new Error(message);
-    }
-
-    startTransition(() => {
-      setSession(data.session);
-      setUser(data.session?.user ?? null);
-    });
-
-    if (data.user && data.session) {
-      await applySignedInUser(data.user);
-    }
-
-    return data;
-  };
-
-  const signIn = async ({ email, password }: SignInPayload): Promise<AuthMethodResult> => {
-    if (!supabase) {
-      throw new Error(getMissingConfigMessage());
-    }
-
-    setAuthError(null);
-
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-
-    if (error) {
-      const message = getAuthErrorMessage(error);
-      setAuthError(message);
-      throw new Error(message);
-    }
-
-    startTransition(() => {
-      setSession(data.session);
-      setUser(data.user);
-    });
-
-    if (data.user) {
-      await applySignedInUser(data.user);
-    }
-
-    return data;
-  };
-
   const signInWithGoogle = async (nextPath?: string) => {
     if (!supabase) {
       throw new Error(getMissingConfigMessage());
@@ -205,10 +133,11 @@ export function AuthProvider({ children }: PropsWithChildren) {
 
     setAuthError(null);
 
-    const { error } = await supabase.auth.signInWithOAuth({
+    const { data, error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
         redirectTo: getGoogleRedirectUrl(nextPath),
+        skipBrowserRedirect: true,
       },
     });
 
@@ -217,6 +146,14 @@ export function AuthProvider({ children }: PropsWithChildren) {
       setAuthError(message);
       throw new Error(message);
     }
+
+    if (!data?.url) {
+      const message = "Supabase did not return an OAuth redirect URL.";
+      setAuthError(message);
+      throw new Error(message);
+    }
+
+    navigateToUrl(data.url);
   };
 
   const signOut = async () => {
@@ -259,12 +196,10 @@ export function AuthProvider({ children }: PropsWithChildren) {
       authError,
       clearAuthError: () => setAuthError(null),
       refreshProfile,
-      signUp,
-      signIn,
       signInWithGoogle,
       signOut,
     }),
-    [authError, loading, profile, session, user]
+    [authError, loading, profile, session, signOut, user]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

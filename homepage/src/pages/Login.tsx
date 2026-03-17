@@ -1,59 +1,29 @@
-import { FormEvent, useState } from "react";
-import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
+import { useState } from "react";
+import { Link, useLocation, useSearchParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import {
   appendNextSearchParam,
   buildAppPath,
+  buildOAuthConsentPath,
   getDefaultSignedInPath,
   resolveRedirectPath,
 } from "../lib/runtime";
 import { getAuthErrorMessage, getMissingConfigMessage } from "../lib/supabase";
 
-function isValidEmail(value: string) {
-  return /\S+@\S+\.\S+/.test(value);
-}
-
 export default function Login() {
-  const navigate = useNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams();
-  const { authConfigured, authError, clearAuthError, signIn, signInWithGoogle } = useAuth();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const { authConfigured, authError, clearAuthError, signInWithGoogle } = useAuth();
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const authorizationId = searchParams.get("authorization_id")?.trim() ?? "";
 
-  const from = resolveRedirectPath(
-    searchParams.get("next") ?? (typeof location.state?.from === "string" ? location.state.from : null),
-    getDefaultSignedInPath()
-  );
-
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    clearAuthError();
-
-    if (!isValidEmail(email)) {
-      setMessage("Enter a valid email address.");
-      return;
-    }
-
-    if (!password.trim()) {
-      setMessage("Enter your password.");
-      return;
-    }
-
-    setSubmitting(true);
-    setMessage(null);
-
-    try {
-      await signIn({ email: email.trim(), password });
-      navigate(from, { replace: true });
-    } catch (error) {
-      setMessage(getAuthErrorMessage(error));
-    } finally {
-      setSubmitting(false);
-    }
-  };
+  const from = authorizationId
+    ? buildOAuthConsentPath(authorizationId)
+    : resolveRedirectPath(
+        searchParams.get("next") ?? (typeof location.state?.from === "string" ? location.state.from : null),
+        getDefaultSignedInPath()
+      );
 
   const handleGoogleSignIn = async () => {
     clearAuthError();
@@ -69,6 +39,9 @@ export default function Login() {
   };
 
   const effectiveMessage = message ?? authError;
+  const switchPath = authorizationId
+    ? `${appendNextSearchParam(buildAppPath("/register"), from)}&authorization_id=${encodeURIComponent(authorizationId)}`
+    : appendNextSearchParam(buildAppPath("/register"), from);
 
   return (
     <section className="page-section">
@@ -77,48 +50,24 @@ export default function Login() {
           <span className="pill">Login</span>
           <h1 className="section-title">Welcome back to Altair</h1>
           <p className="section-subtitle">
-            Sign in with your email and password or continue with Google to access your account.
+            Continue with Google OAuth to access your account and resume any pending authorization.
           </p>
           <div className="bullet-list">
             <div className="bullet-item">
               <span aria-hidden="true">01</span>
-              <span>Fast email/password login</span>
+              <span>Single OAuth sign-in flow across marketing and workspace access</span>
             </div>
             <div className="bullet-item">
               <span aria-hidden="true">02</span>
-              <span>Google account sign-in</span>
+              <span>Supabase-managed session handling and callback recovery</span>
             </div>
             <div className="bullet-item">
               <span aria-hidden="true">03</span>
-              <span>Private profile storage in Supabase</span>
+              <span>Automatic return to the OAuth consent screen when an app requested access</span>
             </div>
           </div>
         </div>
-        <form className="card-panel form-panel auth-card" onSubmit={handleSubmit}>
-          <label>
-            Email
-            <input
-              className="input"
-              type="email"
-              name="email"
-              autoComplete="email"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              required
-            />
-          </label>
-          <label>
-            Password
-            <input
-              className="input"
-              type="password"
-              name="password"
-              autoComplete="current-password"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              required
-            />
-          </label>
+        <div className="card-panel form-panel auth-card">
           {!authConfigured ? (
             <p className="status-banner warning">{getMissingConfigMessage()}</p>
           ) : null}
@@ -127,33 +76,26 @@ export default function Login() {
               {effectiveMessage}
             </p>
           ) : null}
-          <button className="button" type="submit" disabled={submitting || !authConfigured}>
-            {submitting ? "Signing in..." : "Sign in"}
-          </button>
-          <div className="auth-divider" aria-hidden="true">
-            <span />
-            <span>or</span>
-            <span />
-          </div>
+          {authorizationId ? (
+            <p className="status-banner success">
+              Sign in first, then we will send you to the Altair consent screen to finish authorization.
+            </p>
+          ) : null}
           <button
-            className="button ghost"
+            className="button"
             type="button"
             onClick={handleGoogleSignIn}
             disabled={submitting || !authConfigured}
           >
-            Continue with Google
+            {submitting ? "Redirecting to Google..." : "Continue with Google"}
           </button>
           <p className="auth-switch">
-            New here?{" "}
-            <Link
-              className="text-link"
-              to={appendNextSearchParam(buildAppPath("/register"), from)}
-              state={{ from }}
-            >
-              Create an account
+            Need a new account?{" "}
+            <Link className="text-link" to={switchPath} state={{ from }}>
+              Register with Google
             </Link>
           </p>
-        </form>
+        </div>
       </div>
     </section>
   );

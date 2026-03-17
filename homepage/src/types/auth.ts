@@ -43,22 +43,6 @@ export interface Database {
   };
 }
 
-export interface AuthMethodResult {
-  user: User | null;
-  session: Session | null;
-}
-
-export interface SignUpPayload {
-  email: string;
-  password: string;
-  fullName: string;
-}
-
-export interface SignInPayload {
-  email: string;
-  password: string;
-}
-
 export interface AuthContextValue {
   user: User | null;
   session: Session | null;
@@ -68,8 +52,6 @@ export interface AuthContextValue {
   authError: string | null;
   clearAuthError: () => void;
   refreshProfile: () => Promise<void>;
-  signUp: (payload: SignUpPayload) => Promise<AuthMethodResult>;
-  signIn: (payload: SignInPayload) => Promise<AuthMethodResult>;
   signInWithGoogle: (nextPath?: string) => Promise<void>;
   signOut: () => Promise<void>;
 }

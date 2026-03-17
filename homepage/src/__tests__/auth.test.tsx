@@ -64,6 +64,10 @@ let currentProfile: AppUserProfile = {
 const signUpMock = vi.fn();
 const signInWithPasswordMock = vi.fn();
 const signInWithOAuthMock = vi.fn();
+const navigateToUrlMock = vi.fn();
+const getAuthorizationDetailsMock = vi.fn();
+const approveAuthorizationMock = vi.fn();
+const denyAuthorizationMock = vi.fn();
 const signOutMock = vi.fn();
 const exchangeCodeForSessionMock = vi.fn();
 const setSessionMock = vi.fn();
@@ -97,6 +101,11 @@ vi.mock("../lib/supabase", () => ({
       signOut: (...args: unknown[]) => signOutMock(...args),
       exchangeCodeForSession: (...args: unknown[]) => exchangeCodeForSessionMock(...args),
       setSession: (...args: unknown[]) => setSessionMock(...args),
+      oauth: {
+        getAuthorizationDetails: (...args: unknown[]) => getAuthorizationDetailsMock(...args),
+        approveAuthorization: (...args: unknown[]) => approveAuthorizationMock(...args),
+        denyAuthorization: (...args: unknown[]) => denyAuthorizationMock(...args),
+      },
     },
     from: () => ({
       select: () => ({
@@ -111,6 +120,10 @@ vi.mock("../lib/supabase", () => ({
       }),
     }),
   },
+}));
+
+vi.mock("../lib/browser", () => ({
+  navigateToUrl: (...args: unknown[]) => navigateToUrlMock(...args),
 }));
 
 function renderApp(initialEntries: string[]) {
@@ -140,6 +153,10 @@ beforeEach(() => {
   signUpMock.mockReset();
   signInWithPasswordMock.mockReset();
   signInWithOAuthMock.mockReset();
+  navigateToUrlMock.mockReset();
+  getAuthorizationDetailsMock.mockReset();
+  approveAuthorizationMock.mockReset();
+  denyAuthorizationMock.mockReset();
   signOutMock.mockReset();
   exchangeCodeForSessionMock.mockReset();
   setSessionMock.mockReset();
@@ -164,6 +181,36 @@ beforeEach(() => {
   signUpMock.mockResolvedValue({ data: { user: null, session: null }, error: null });
   signInWithPasswordMock.mockResolvedValue({ data: { user: null, session: null }, error: null });
   signInWithOAuthMock.mockResolvedValue({ data: { provider: "google", url: "https://accounts.google.com" }, error: null });
+  getAuthorizationDetailsMock.mockResolvedValue({
+    data: {
+      authorization_id: "auth-123",
+      redirect_uri: "https://client.altair.test/callback",
+      client: {
+        id: "client-123",
+        name: "Altair Partner App",
+        uri: "https://client.altair.test",
+        logo_uri: "https://client.altair.test/logo.png",
+      },
+      user: {
+        id: "user-123",
+        email: "member@altair.test",
+      },
+      scope: "openid profile email",
+    },
+    error: null,
+  });
+  approveAuthorizationMock.mockResolvedValue({
+    data: {
+      redirect_url: "https://client.altair.test/callback?code=oauth-code&state=state-123",
+    },
+    error: null,
+  });
+  denyAuthorizationMock.mockResolvedValue({
+    data: {
+      redirect_url: "https://client.altair.test/callback?error=access_denied&state=state-123",
+    },
+    error: null,
+  });
   signOutMock.mockImplementation(async () => {
     currentSession = null;
     authStateChangeHandler?.("SIGNED_OUT", null);
@@ -198,22 +245,6 @@ describe("auth flows", () => {
     });
 
     expect(screen.getAllByRole("button", { name: "Logout" }).length).toBeGreaterThan(0);
-  });
-
-  it("validates password confirmation during registration", async () => {
-    const user = userEvent.setup();
-
-    renderApp(["/register"]);
-
-    await screen.findByRole("heading", { name: /create your altair account/i });
-    await user.type(screen.getByLabelText("Full name"), "Test User");
-    await user.type(screen.getByLabelText("Email"), "test@altair.dev");
-    await user.type(screen.getByLabelText(/^Password$/), "password123");
-    await user.type(screen.getByLabelText("Confirm password"), "password124");
-    await user.click(screen.getByRole("button", { name: "Create account" }));
-
-    expect(await screen.findByRole("alert")).toHaveTextContent("Passwords do not match.");
-    expect(signUpMock).not.toHaveBeenCalled();
   });
 
   it("redirects unauthenticated visitors from account to login", async () => {
@@ -333,82 +364,40 @@ describe("auth flows", () => {
     window.location.hash = "";
   });
 
-  it("signs up with email/password and loads the profile", async () => {
+  it("starts Google OAuth from the register screen", async () => {
     const user = userEvent.setup();
-    const signedUpSession = createSession();
-
-    signUpMock.mockResolvedValue({
-      data: {
-        user: signedUpSession.user,
-        session: signedUpSession,
-      },
-      error: null,
-    });
 
     renderApp(["/register"]);
 
     await screen.findByRole("heading", { name: /create your altair account/i });
-    await user.type(screen.getByLabelText("Full name"), "Altair Member");
-    await user.type(screen.getByLabelText("Email"), "member@altair.test");
-    await user.type(screen.getByLabelText(/^Password$/), "password123");
-    await user.type(screen.getByLabelText("Confirm password"), "password123");
-    await user.click(screen.getByRole("button", { name: "Create account" }));
+    await user.click(screen.getByRole("button", { name: "Register with Google" }));
 
-    await screen.findByRole("heading", { name: /your altair profile/i });
-
-    expect(signUpMock).toHaveBeenCalled();
-    expect(upsertSelectSingleMock).toHaveBeenCalled();
-    expect(screen.getByText("Altair Member")).toBeInTheDocument();
+    expect(signInWithOAuthMock).toHaveBeenCalledWith({
+      provider: "google",
+      options: {
+        redirectTo: "http://localhost:5173/auth/callback?next=%2Faccount",
+        skipBrowserRedirect: true,
+      },
+    });
+    expect(navigateToUrlMock).toHaveBeenCalledWith("https://accounts.google.com");
   });
 
-  it("preserves next after email registration when a session is created immediately", async () => {
+  it("preserves next when starting Google OAuth from the register screen", async () => {
     const user = userEvent.setup();
-    const signedUpSession = createSession();
-
-    signUpMock.mockResolvedValue({
-      data: {
-        user: signedUpSession.user,
-        session: signedUpSession,
-      },
-      error: null,
-    });
 
     renderApp(["/register?next=%2Fcontact"]);
 
     await screen.findByRole("heading", { name: /create your altair account/i });
-    await user.type(screen.getByLabelText("Full name"), "Altair Member");
-    await user.type(screen.getByLabelText("Email"), "member@altair.test");
-    await user.type(screen.getByLabelText(/^Password$/), "password123");
-    await user.type(screen.getByLabelText("Confirm password"), "password123");
-    await user.click(screen.getByRole("button", { name: "Create account" }));
+    await user.click(screen.getByRole("button", { name: "Register with Google" }));
 
-    expect(await screen.findByRole("heading", { name: /talk with the altair team/i })).toBeInTheDocument();
-  });
-
-  it("signs in with email/password and restores the session", async () => {
-    const user = userEvent.setup();
-    const signedInSession = createSession();
-
-    signInWithPasswordMock.mockResolvedValue({
-      data: {
-        user: signedInSession.user,
-        session: signedInSession,
+    expect(signInWithOAuthMock).toHaveBeenCalledWith({
+      provider: "google",
+      options: {
+        redirectTo: "http://localhost:5173/auth/callback?next=%2Fcontact",
+        skipBrowserRedirect: true,
       },
-      error: null,
     });
-
-    renderApp(["/login"]);
-
-    await screen.findByRole("heading", { name: /welcome back to altair/i });
-    await user.type(screen.getByLabelText("Email"), "member@altair.test");
-    await user.type(screen.getByLabelText("Password"), "password123");
-    await user.click(screen.getByRole("button", { name: "Sign in" }));
-
-    expect(await screen.findByRole("heading", { name: /your altair profile/i })).toBeInTheDocument();
-    expect(signInWithPasswordMock).toHaveBeenCalledWith({
-      email: "member@altair.test",
-      password: "password123",
-    });
+    expect(navigateToUrlMock).toHaveBeenCalledWith("https://accounts.google.com");
   });
 
   it("starts Google OAuth from the login screen", async () => {
@@ -423,8 +412,10 @@ describe("auth flows", () => {
       provider: "google",
       options: {
         redirectTo: "http://localhost:5173/auth/callback?next=%2Faccount",
+        skipBrowserRedirect: true,
       },
     });
+    expect(navigateToUrlMock).toHaveBeenCalledWith("https://accounts.google.com");
   });
 
   it("preserves next when starting Google OAuth from the login screen", async () => {
@@ -439,8 +430,81 @@ describe("auth flows", () => {
       provider: "google",
       options: {
         redirectTo: "http://localhost:5173/auth/callback?next=%2Fcontact",
+        skipBrowserRedirect: true,
       },
     });
+    expect(navigateToUrlMock).toHaveBeenCalledWith("https://accounts.google.com");
+  });
+
+  it("resumes OAuth consent after signing in from the login screen", async () => {
+    const user = userEvent.setup();
+
+    renderApp(["/login?authorization_id=auth-123"]);
+
+    await screen.findByRole("heading", { name: /welcome back to altair/i });
+    await user.click(screen.getByRole("button", { name: "Continue with Google" }));
+
+    expect(signInWithOAuthMock).toHaveBeenCalledWith({
+      provider: "google",
+      options: {
+        redirectTo:
+          "http://localhost:5173/auth/callback?next=%2Foauth%2Fconsent%3Fauthorization_id%3Dauth-123",
+        skipBrowserRedirect: true,
+      },
+    });
+    expect(navigateToUrlMock).toHaveBeenCalledWith("https://accounts.google.com");
+  });
+
+  it("prompts signed-out users to authenticate before consent", async () => {
+    const user = userEvent.setup();
+
+    renderApp(["/oauth/consent?authorization_id=auth-123"]);
+
+    expect(await screen.findByRole("heading", { name: /sign in to review this authorization request/i })).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Continue with Google" }));
+
+    expect(signInWithOAuthMock).toHaveBeenCalledWith({
+      provider: "google",
+      options: {
+        redirectTo:
+          "http://localhost:5173/auth/callback?next=%2Foauth%2Fconsent%3Fauthorization_id%3Dauth-123",
+        skipBrowserRedirect: true,
+      },
+    });
+    expect(navigateToUrlMock).toHaveBeenCalledWith("https://accounts.google.com");
+  });
+
+  it("loads consent details for signed-in users and approves access", async () => {
+    const user = userEvent.setup();
+    currentSession = createSession({
+      user: createUser({
+        app_metadata: { provider: "google" },
+        identities: [{ provider: "google" }],
+      }),
+    });
+    currentProfile = {
+      user_id: "user-123",
+      email: "member@altair.test",
+      full_name: "Altair Member",
+      avatar_url: null,
+      auth_provider: "google",
+      created_at: "2026-01-01T00:00:00.000Z",
+      updated_at: "2026-01-02T00:00:00.000Z",
+    };
+    getSessionMock.mockResolvedValue({ data: { session: currentSession }, error: null });
+
+    renderApp(["/oauth/consent?authorization_id=auth-123"]);
+
+    expect(await screen.findByRole("heading", { name: /altair partner app is requesting access/i })).toBeInTheDocument();
+    expect(getAuthorizationDetailsMock).toHaveBeenCalledWith("auth-123");
+    await user.click(screen.getByRole("button", { name: "Approve access" }));
+
+    await waitFor(() => {
+      expect(approveAuthorizationMock).toHaveBeenCalledWith("auth-123", { skipBrowserRedirect: true });
+    });
+    expect(navigateToUrlMock).toHaveBeenCalledWith(
+      "https://client.altair.test/callback?code=oauth-code&state=state-123"
+    );
   });
 
   it("signs out and returns to the signed-out navigation", async () => {

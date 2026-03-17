@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   appendNextSearchParam,
   buildAppPath,
+  buildOAuthConsentPath,
   buildWorkspaceUrl,
   detectActiveApp,
   getAuthCallbackPathFromHash,
@@ -179,6 +180,18 @@ describe("runtime host detection", () => {
       "/login?next=%2Fchat%3Fapp%3Dworkspace"
     );
     expect(appendNextSearchParam("/login", "https://evil.example/phish", locationLike)).toBe("/login");
+  });
+
+  it("builds an OAuth consent path on the active app origin", () => {
+    expect(
+      buildOAuthConsentPath("auth-123", {
+        locationLike: {
+          hostname: "altairworld.com",
+          origin: "https://altairworld.com",
+          search: "",
+        },
+      })
+    ).toBe("/oauth/consent?authorization_id=auth-123");
   });
 
   it("falls back to the signed-in default when next is unsafe", () => {

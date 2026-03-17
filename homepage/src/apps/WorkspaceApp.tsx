@@ -3,6 +3,7 @@ import Account from "../pages/Account";
 import Login from "../pages/Login";
 import Register from "../pages/Register";
 import AuthCallback from "../pages/AuthCallback";
+import OAuthConsent from "../pages/OAuthConsent";
 import ProtectedRoute from "../components/ProtectedRoute";
 import PublicOnlyRoute from "../components/PublicOnlyRoute";
 import WorkspaceShell from "../components/WorkspaceShell";
@@ -18,6 +19,7 @@ export default function WorkspaceApp() {
     <Routes>
       <Route path="/" element={<WorkspaceEntry />} />
       <Route path="/auth/callback" element={<AuthCallback />} />
+      <Route path="/oauth/consent" element={<OAuthConsent />} />
       <Route element={<PublicOnlyRoute authenticatedTo={buildAppPath("/chat", { app: "workspace" })} />}>
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />

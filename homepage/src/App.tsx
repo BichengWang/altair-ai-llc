@@ -8,6 +8,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Account from "./pages/Account";
 import AuthCallback from "./pages/AuthCallback";
+import OAuthConsent from "./pages/OAuthConsent";
 import ProtectedRoute from "./components/ProtectedRoute";
 import PublicOnlyRoute from "./components/PublicOnlyRoute";
 import { useAuth } from "./context/AuthContext";
@@ -69,6 +70,7 @@ export default function App() {
           <Route path="/enquiry" element={<Enquiry />} />
           <Route path="/contact" element={<ContactPage />} />
           <Route path="/auth/callback" element={<AuthCallback />} />
+          <Route path="/oauth/consent" element={<OAuthConsent />} />
           <Route element={<PublicOnlyRoute />}>
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />

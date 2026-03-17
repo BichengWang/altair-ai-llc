@@ -24,8 +24,8 @@ Elegant, single-page marketing site for Altair's local services platform.
 2. In the Supabase SQL editor, run [`supabase/profiles.sql`](./supabase/profiles.sql) to create the `profiles` table, row-level security policies, and the auth trigger that seeds profile rows.
 3. Run [`supabase/workspace.sql`](./supabase/workspace.sql) to create the workspace tables for provider credentials, managed keys, conversations, usage events, and SSO handoffs.
 4. In Supabase Auth settings, enable:
-   - Email/password auth
    - Google provider
+   - OAuth 2.1 server if you want Altair to host the consent screen at `https://altairworld.com/oauth/consent`
 5. In the Google Cloud console, create OAuth credentials and add the redirect URI Supabase gives you for the Google provider.
 6. In Supabase Auth URL configuration, add these redirect URLs:
    - Local dev: `http://localhost:5173/auth/callback`
@@ -33,7 +33,10 @@ Elegant, single-page marketing site for Altair's local services platform.
    - Production: `https://your-domain.example/auth/callback`
    - Production workspace: `https://llm.your-domain.example/auth/callback`
    - Site URL for email confirmation: your deployed homepage origin
-7. Add these Vite env vars to `.env.local` and your deployment environment:
+7. If you are using Supabase OAuth Server, configure the consent page URL to point at your deployed app route:
+   - Production consent page: `https://altairworld.com/oauth/consent`
+   - Local consent page: `http://localhost:5173/oauth/consent`
+8. Add these Vite env vars to `.env.local` and your deployment environment:
    ```bash
    VITE_SUPABASE_URL=https://your-project-ref.supabase.co
    VITE_SUPABASE_PUBLISHABLE_KEY=your-publishable-key
@@ -71,9 +74,9 @@ The workspace function exposes these routes under `workspace-api`:
 
 ## Auth routes
 
-- Public: `/`, `/services`, `/services/:slug`, `/enquiry`, `/contact`, `/login`, `/register`, `/auth/callback`
+- Public: `/`, `/services`, `/services/:slug`, `/enquiry`, `/contact`, `/login`, `/register`, `/auth/callback`, `/oauth/consent`
 - Protected: `/account`
-- Workspace host: `/`, `/login`, `/register`, `/auth/callback`, `/chat`, `/keys`, `/usage`, `/account`
+- Workspace host: `/`, `/login`, `/register`, `/auth/callback`, `/oauth/consent`, `/chat`, `/keys`, `/usage`, `/account`
 
 ## Review workspace
 
