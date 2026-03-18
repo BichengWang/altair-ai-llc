@@ -66,14 +66,21 @@ type UsageEventRow = {
   created_at: string;
 };
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-};
+function getCorsHeaders(request?: Request) {
+  return {
+    "Access-Control-Allow-Origin": request?.headers.get("Origin") ?? "*",
+    "Access-Control-Allow-Headers":
+      request?.headers.get("Access-Control-Request-Headers") ??
+      "authorization, x-client-info, apikey, content-type",
+    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+  };
+}
 
 const supabaseUrl = Deno.env.get("SUPABASE_URL");
-const supabasePublishableKey = Deno.env.get("SUPABASE_PUBLISHABLE_KEY");
+const supabasePublishableKey =
+  Deno.env.get("SB_PUBLISHABLE_KEY") ??
+  Deno.env.get("SUPABASE_PUBLISHABLE_KEY") ??
+  Deno.env.get("SUPABASE_ANON_KEY");
 const supabaseServiceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 const encryptionSecret = Deno.env.get("WORKSPACE_ENCRYPTION_SECRET");
 
@@ -91,7 +98,7 @@ function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
     headers: {
-      ...corsHeaders,
+      ...getCorsHeaders(),
       "Content-Type": "application/json",
     },
   });
@@ -118,10 +125,12 @@ async function requireUser(request: Request) {
   if (!authHeader) {
     throw new Response(JSON.stringify({ error: "Missing Authorization header." }), {
       status: 401,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      headers: { ...getCorsHeaders(request), "Content-Type": "application/json" },
     });
   }
 
+  // `verify_jwt` is disabled for this function so publishable-key projects can
+  // authenticate requests in userland instead of failing at the platform edge.
   const userClient = getUserClient(authHeader);
   const {
     data: { user },
@@ -131,7 +140,7 @@ async function requireUser(request: Request) {
   if (error || !user) {
     throw new Response(JSON.stringify({ error: "Your workspace session is invalid or expired." }), {
       status: 401,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      headers: { ...getCorsHeaders(request), "Content-Type": "application/json" },
     });
   }
 
@@ -1069,7 +1078,7 @@ function getRoutePath(url: URL) {
 
 Deno.serve(async (request) => {
   if (request.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    return new Response("ok", { headers: getCorsHeaders(request) });
   }
 
   const url = new URL(request.url);
