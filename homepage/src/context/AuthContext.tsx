@@ -9,7 +9,7 @@ import {
   type PropsWithChildren,
 } from "react";
 import type { User } from "@supabase/supabase-js";
-import { deriveProfileFromUser, fetchProfile, upsertProfileFromUser } from "../lib/profile";
+import { deriveProfileFromUser, loadProfileForUser } from "../lib/profile";
 import { navigateToUrl } from "../lib/browser";
 import {
   getAuthErrorMessage,
@@ -21,22 +21,6 @@ import {
 import type { AppUserProfile, AuthContextValue } from "../types/auth";
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
-
-async function loadProfileForUser(user: User): Promise<AppUserProfile> {
-  try {
-    const upsertedProfile = await upsertProfileFromUser(user);
-
-    if (upsertedProfile) {
-      return upsertedProfile;
-    }
-
-    const storedProfile = await fetchProfile(user.id);
-    return storedProfile ?? deriveProfileFromUser(user);
-  } catch {
-    const storedProfile = await fetchProfile(user.id);
-    return storedProfile ?? deriveProfileFromUser(user);
-  }
-}
 
 export function AuthProvider({ children }: PropsWithChildren) {
   const [user, setUser] = useState<AuthContextValue["user"]>(null);
@@ -126,7 +110,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
     };
   }, [applySignedInUser]);
 
-  const signInWithGoogle = async (nextPath?: string) => {
+  const signInWithGoogle = useCallback(async (nextPath?: string) => {
     if (!supabase) {
       throw new Error(getMissingConfigMessage());
     }
@@ -154,9 +138,9 @@ export function AuthProvider({ children }: PropsWithChildren) {
     }
 
     navigateToUrl(data.url);
-  };
+  }, []);
 
-  const signOut = async () => {
+  const signOut = useCallback(async () => {
     if (!supabase) {
       throw new Error(getMissingConfigMessage());
     }
@@ -175,16 +159,16 @@ export function AuthProvider({ children }: PropsWithChildren) {
       setProfile(null);
       setAuthError(null);
     });
-  };
+  }, []);
 
-  const refreshProfile = async () => {
+  const refreshProfile = useCallback(async () => {
     if (!user) {
       setProfile(null);
       return;
     }
 
     await applySignedInUser(user);
-  };
+  }, [user, applySignedInUser]);
 
   const value = useMemo<AuthContextValue>(
     () => ({
@@ -199,7 +183,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
       signInWithGoogle,
       signOut,
     }),
-    [authError, loading, profile, session, signOut, user]
+    [authError, loading, profile, session, signOut, user, refreshProfile, signInWithGoogle]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

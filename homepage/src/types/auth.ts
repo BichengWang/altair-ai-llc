@@ -1,6 +1,6 @@
 import type { Session, User } from "@supabase/supabase-js";
 
-export interface AppUserProfile {
+export type AppUserProfile = {
   user_id: string;
   email: string | null;
   full_name: string | null;
@@ -8,7 +8,7 @@ export interface AppUserProfile {
   auth_provider: string | null;
   created_at: string;
   updated_at: string;
-}
+};
 
 export interface Database {
   public: {
@@ -33,11 +33,11 @@ export interface Database {
           created_at: string;
           updated_at: string;
         }>;
-        Relationships: [];
+        Relationships: never[];
       };
     };
-    Views: {};
-    Functions: {};
+    Views: Record<string, never>;
+    Functions: Record<string, never>;
     Enums: {};
     CompositeTypes: {};
   };

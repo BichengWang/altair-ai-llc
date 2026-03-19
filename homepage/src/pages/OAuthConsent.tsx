@@ -61,12 +61,13 @@ export default function OAuthConsent() {
     }
 
     let active = true;
+    const client = supabase;
 
     const loadAuthorizationDetails = async () => {
       setStatus("Loading authorization request...");
       setError(null);
 
-      const { data, error: detailsError } = await supabase.auth.oauth.getAuthorizationDetails(authorizationId);
+      const { data, error: detailsError } = await client.auth.oauth.getAuthorizationDetails(authorizationId);
 
       if (!active) {
         return;
