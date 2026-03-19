@@ -51,7 +51,7 @@ const hasValidSupabaseConfig =
   !isPlaceholderPublishableKey(supabasePublishableKey);
 
 export const supabase = hasValidSupabaseConfig
-  ? createClient<Database>(supabaseUrl, supabasePublishableKey, {
+  ? createClient<Database>(supabaseUrl!, supabasePublishableKey!, {
       auth: {
         persistSession: true,
         autoRefreshToken: true,
