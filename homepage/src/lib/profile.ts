@@ -26,8 +26,8 @@ export async function fetchProfile(userId: string): Promise<AppUserProfile | nul
     return null;
   }
 
-  const { data, error }: { data: AppUserProfile | null; error: unknown } = await (supabase
-    .from("profiles") as any)
+  const { data, error } = await supabase
+    .from("profiles")
     .select("*")
     .eq("user_id", userId)
     .maybeSingle();
@@ -36,7 +36,7 @@ export async function fetchProfile(userId: string): Promise<AppUserProfile | nul
     throw error;
   }
 
-  return data;
+  return data as AppUserProfile | null;
 }
 
 export async function upsertProfileFromUser(user: User): Promise<AppUserProfile | null> {
@@ -54,8 +54,8 @@ export async function upsertProfileFromUser(user: User): Promise<AppUserProfile 
     updated_at: new Date().toISOString(),
   };
 
-  const { data, error }: { data: AppUserProfile | null; error: unknown } = await (supabase
-    .from("profiles") as any)
+  const { data, error } = await supabase
+    .from("profiles")
     .upsert(payload, { onConflict: "user_id" })
     .select()
     .single();
@@ -64,5 +64,19 @@ export async function upsertProfileFromUser(user: User): Promise<AppUserProfile 
     throw error;
   }
 
-  return data;
+  return data as AppUserProfile | null;
+}
+
+export async function loadProfileForUser(user: User): Promise<AppUserProfile> {
+  try {
+    const upsertedProfile = await upsertProfileFromUser(user);
+    if (upsertedProfile) {
+      return upsertedProfile;
+    }
+    const storedProfile = await fetchProfile(user.id);
+    return storedProfile ?? deriveProfileFromUser(user);
+  } catch {
+    const storedProfile = await fetchProfile(user.id);
+    return storedProfile ?? deriveProfileFromUser(user);
+  }
 }
