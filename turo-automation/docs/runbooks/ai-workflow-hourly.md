@@ -5,6 +5,13 @@ Run every hour.
 ## Goal
 Review the current development state, choose the single highest-priority next PR, implement it if feasible, verify it, open or update the PR, and keep the docs folder aligned with actual progress.
 
+## Statement
+
+Use follow command to submit PR with {your pr title}:
+```shell
+git pr "{your pr title}"
+```
+
 ## Instructions
 1. Review the current dev plan, active PRs, recent commits, and previous development log.
 2. Identify the single highest-priority task that is ready to execute now.
