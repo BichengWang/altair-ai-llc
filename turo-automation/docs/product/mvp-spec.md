@@ -1,0 +1,29 @@
+# MVP Spec
+
+## Goal
+Reduce manual operational work for the Turo host team by centralizing trip operations, team tasks, and communication workflows.
+
+## Primary Users
+- Host operations staff
+- Vehicle prep / turnaround staff
+- Team lead / manager
+
+## MVP Outcomes
+- See today's pickups, returns, and active issues in one place
+- Automatically generate ops tasks per trip lifecycle
+- Draft guest-facing messages for review
+- Alert the team about late returns and exceptions
+- Produce a simple daily operational summary
+
+## MVP Workflow Scope
+1. Trip intake and normalization
+2. Vehicle readiness / turnaround task generation
+3. Messaging draft center
+4. Late return and issue alerting
+5. Slack summary reporting
+
+## Non-Goals (for MVP)
+- Full autonomous guest messaging
+- Advanced dynamic pricing engine
+- Full claims automation
+- Complex analytics warehouse
