@@ -56,19 +56,28 @@ Chronological notes on repo setup, architecture decisions, implementation progre
 - Updated the root `README.md` to describe package roles
 - Updated `docs/planning/daily-plan.md` to mark the app skeleton milestone complete
 
+### Third runbook execution
+- Synced back to `main` after the app skeleton merged
+- Selected the next highest-priority ready task: create the first persistence slice for the MVP domain
+- Added `turo-automation/supabase/migrations/0001_turo_ops_core.sql`
+- Implemented initial tables for:
+  - `vehicles`
+  - `guests`
+  - `trips`
+  - `tasks`
+- Added indexes, `updated_at` triggers, and baseline authenticated RLS policies for those tables
+- Updated `docs/planning/daily-plan.md` to mark the schema milestone complete and point to the dashboard shell as the next task
+
 ### Decision
-- The next highest-priority implementation PR should add the first Supabase schema/migration slice for `vehicles`, `guests`, `trips`, and `tasks`
-- Reason: the executable workspace now exists, so the next bottleneck is persistent data structure for the operational dashboard and worker flows
+- The next highest-priority implementation PR should build the first internal dashboard shell for vehicles, trips, tasks, and incidents
+- Reason: the docs foundation, app skeleton, and initial persistence layer now exist; the next smallest useful increment is turning that structure into an operator-facing UI shape
 
 ### Verification
-- Ran `npm install` inside `turo-automation/`
-- Ran `npm run build` successfully for:
-  - `@turo-automation/shared`
-  - `@turo-automation/worker`
-  - `@turo-automation/web`
+- Verified the migration file against existing SQL conventions in `homepage/supabase/workspace.sql`
+- Assumption: Supabase CLI is not installed locally, so verification was limited to SQL consistency review rather than CLI lint/apply
 
 ### Pending
-- Add the first Supabase schema/migration slice
 - Build the first internal dashboard shell beyond placeholder content
 - Add worker job framework for scheduled automation
 - Connect shared domain models to persistence and UI
+- Add incident and messaging schema slices
