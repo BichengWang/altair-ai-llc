@@ -17,7 +17,8 @@ Stand up the Turo Automation sub-repo and define the MVP for daily host operatio
 - [x] Draft architecture overview
 - [x] Draft implementation roadmap
 - [x] Initialize `web/`, `worker/`, and `shared/` app skeletons
-- [ ] Add the first Supabase schema and migrations for vehicles, guests, trips, and tasks
+- [x] Add the first Supabase schema and migrations for vehicles, guests, trips, and tasks
+- [ ] Build the first internal dashboard shell using the current domain model
 
 ## Candidate MVP Workflows
 1. Upcoming pickup / return dashboard
@@ -33,4 +34,4 @@ Stand up the Turo Automation sub-repo and define the MVP for daily host operatio
 - What are the exact daily pain points for the host team?
 
 ## Next Suggested Step
-Add the first Supabase schema/migration slice for `vehicles`, `guests`, `trips`, and `tasks`, then connect the dashboard shell to those domain models.
+Build the first internal dashboard shell with sections for vehicles, trips, tasks, and incidents, using the current domain model and schema as the source of truth.
