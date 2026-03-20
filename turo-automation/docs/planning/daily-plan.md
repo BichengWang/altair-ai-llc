@@ -12,10 +12,11 @@ Stand up the Turo Automation sub-repo and define the MVP for daily host operatio
 - [x] Create repo structure
 - [x] Create docs structure
 - [x] Create planning + logging files
-- [ ] Define MVP workflows
-- [ ] Draft data model
-- [ ] Draft architecture overview
-- [ ] Pick first implementation slice
+- [x] Define MVP workflows
+- [x] Draft data model
+- [x] Draft architecture overview
+- [x] Draft implementation roadmap
+- [ ] Initialize `web/`, `worker/`, and `shared/` app skeletons
 
 ## Candidate MVP Workflows
 1. Upcoming pickup / return dashboard
@@ -31,4 +32,4 @@ Stand up the Turo Automation sub-repo and define the MVP for daily host operatio
 - What are the exact daily pain points for the host team?
 
 ## Next Suggested Step
-Write a 1-page MVP product spec and a first-pass schema for trips, vehicles, tasks, and guest messages.
+Create the initial app skeleton for `web/`, `worker/`, and `shared/`, then layer in the first schema and dashboard shell.
