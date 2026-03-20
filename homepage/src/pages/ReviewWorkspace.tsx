@@ -10,6 +10,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { requestReviewResponse } from "../features/review/anthropic";
 import {
+  buildReviewDocumentContext,
   loadDocxFile,
   normalizeSelectionText,
   renderDocxPreview,
@@ -269,14 +270,26 @@ export default function ReviewWorkspace({
     setIsSending(true);
 
     try {
+      const renderedDocumentText = normalizeSelectionText(
+        viewerRef.current?.textContent ?? ""
+      );
       const reply = await requestReviewResponse({
         apiKey: effectiveApiKey,
         baseUrl: effectiveBaseUrl,
         documentName: uploadedDoc.name,
+        documentContext: buildReviewDocumentContext(
+          uploadedDoc.fullText || renderedDocumentText,
+          uploadedDoc.chunks,
+          selectedExcerpt.text
+        ),
         model: effectiveModel,
         selectedExcerpt,
         question: prompt,
-        history: messages.map(({ role, content }) => ({ role, content })),
+        history: messages.map(({ role, content, selectedText }) => ({
+          role,
+          content,
+          selectedText,
+        })),
       });
 
       setMessages((current) => [

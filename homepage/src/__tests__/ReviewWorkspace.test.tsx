@@ -4,6 +4,7 @@ import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import App from "../App";
 import * as docxPreview from "docx-preview";
+import JSZip from "jszip";
 
 vi.mock("docx-preview", () => ({
   renderAsync: vi.fn(),
@@ -56,7 +57,7 @@ describe("Review workspace", () => {
 
     await userEvent.setup().upload(
       await screen.findByLabelText(/upload a docx file/i),
-      createDocxFile()
+      await createDocxFile()
     );
 
     await screen.findByText(/payment will be due within 30 days\./i);
@@ -76,7 +77,7 @@ describe("Review workspace", () => {
 
     await user.upload(
       await screen.findByLabelText(/upload a docx file/i),
-      createDocxFile()
+      await createDocxFile()
     );
 
     expect(await screen.findByRole("alert")).toHaveTextContent("Unreadable file");
@@ -129,7 +130,7 @@ describe("Review workspace", () => {
 
     await user.upload(
       await screen.findByLabelText(/upload a docx file/i),
-      createDocxFile()
+      await createDocxFile()
     );
     await screen.findByText(/payment will be due within 30 days\./i);
 
@@ -174,7 +175,7 @@ describe("Review workspace", () => {
 
     await user.upload(
       await screen.findByLabelText(/upload a docx file/i),
-      createDocxFile()
+      await createDocxFile()
     );
     await screen.findByText(/payment will be due within 30 days\./i);
 
@@ -223,7 +224,7 @@ describe("Review workspace", () => {
 
     await user.upload(
       await screen.findByLabelText(/upload a docx file/i),
-      createDocxFile()
+      await createDocxFile()
     );
     await screen.findByText(/payment will be due within 30 days\./i);
 
@@ -244,6 +245,16 @@ describe("Review workspace", () => {
       "Payment will be due within 30 days."
     );
     expect(request.messages.at(-1).content).toContain(
+      "Document context:"
+    );
+    expect(request.messages.at(-1).content).toContain(
+      "Master Services Agreement"
+    );
+    expect(request.messages.at(-1).content).toContain(
+      "Vendor will respond within two business days."
+    );
+    expect(request.messages.at(-1).content).toContain("Relevant chunks:");
+    expect(request.messages.at(-1).content).toContain(
       "What obligation does this create?"
     );
     expect(request.model).toBe("gpt-5.4");
@@ -254,6 +265,81 @@ describe("Review workspace", () => {
           authorization: "Bearer typed-test-key",
         }),
       })
+    );
+  });
+
+  
+  it("preserves selected clause context across follow-up turns", async () => {
+    const user = userEvent.setup();
+    const fetchMock = vi.mocked(fetch);
+
+    fetchMock
+      .mockResolvedValueOnce({
+        ok: true,
+        text: async () =>
+          JSON.stringify({
+            choices: [
+              {
+                message: {
+                  content: "The clause sets a 30-day payment deadline.",
+                },
+              },
+            ],
+          }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        text: async () =>
+          JSON.stringify({
+            choices: [
+              {
+                message: {
+                  content: "It does not conflict with the response-time clause.",
+                },
+              },
+            ],
+          }),
+      } as Response);
+
+    saveProviderSettings();
+    renderReviewWorkspace();
+
+    await user.upload(
+      await screen.findByLabelText(/upload a docx file/i),
+      await createDocxFile()
+    );
+    await screen.findByText(/payment will be due within 30 days\./i);
+
+    selectRenderedText("Payment will be due within 30 days.");
+    await user.type(
+      await screen.findByLabelText(/ask about the selected clause/i),
+      "What obligation does this create?"
+    );
+    await user.click(screen.getByRole("button", { name: /ask agent/i }));
+
+    expect(
+      await screen.findByText(/30-day payment deadline/i)
+    ).toBeInTheDocument();
+
+    await user.type(
+      await screen.findByLabelText(/ask about the selected clause/i),
+      "Does that conflict with the response-time clause?"
+    );
+    await user.click(screen.getByRole("button", { name: /ask agent/i }));
+
+    expect(
+      await screen.findByText(/does not conflict with the response-time clause/i)
+    ).toBeInTheDocument();
+
+    const secondRequest = JSON.parse(String(fetchMock.mock.calls[1]?.[1]?.body));
+    expect(secondRequest.messages[1].content).toContain(
+      "Selected excerpt for this turn:"
+    );
+    expect(secondRequest.messages[1].content).toContain(
+      "Payment will be due within 30 days."
+    );
+    expect(secondRequest.messages.at(-1).content).toContain(
+      "Does that conflict with the response-time clause?"
     );
   });
 
@@ -288,7 +374,7 @@ describe("Review workspace", () => {
 
     await user.upload(
       await screen.findByLabelText(/upload a docx file/i),
-      createDocxFile()
+      await createDocxFile()
     );
     await screen.findByText(/payment will be due within 30 days\./i);
 
@@ -328,7 +414,7 @@ describe("Review workspace", () => {
 
     await user.upload(
       await screen.findByLabelText(/upload a docx file/i),
-      createDocxFile()
+      await createDocxFile()
     );
     await screen.findByText(/payment will be due within 30 days\./i);
 
@@ -361,7 +447,7 @@ describe("Review workspace", () => {
 
     await user.upload(
       await screen.findByLabelText(/upload a docx file/i),
-      createDocxFile()
+      await createDocxFile()
     );
     await screen.findByText(/payment will be due within 30 days\./i);
 
@@ -397,7 +483,7 @@ describe("Review workspace", () => {
 
     await user.upload(
       await screen.findByLabelText(/upload a docx file/i),
-      createDocxFile()
+      await createDocxFile()
     );
     await screen.findByText(/payment will be due within 30 days\./i);
 
@@ -431,7 +517,7 @@ describe("Review workspace", () => {
 
     await user.upload(
       await screen.findByLabelText(/upload a docx file/i),
-      createDocxFile()
+      await createDocxFile()
     );
     await screen.findByText(/payment will be due within 30 days\./i);
 
@@ -456,8 +542,43 @@ function renderReviewWorkspace(initialEntry = "/review") {
   );
 }
 
-function createDocxFile() {
-  return new File(["docx"], "contract.docx", {
+async function createDocxFile() {
+  const zip = new JSZip();
+  zip.file(
+    "[Content_Types].xml",
+    `<?xml version="1.0" encoding="UTF-8"?>
+      <Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+        <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+        <Default Extension="xml" ContentType="application/xml"/>
+        <Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>
+      </Types>`
+  );
+  zip.folder("_rels")?.file(
+    ".rels",
+    `<?xml version="1.0" encoding="UTF-8"?>
+      <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+        <Relationship
+          Id="rId1"
+          Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument"
+          Target="word/document.xml"
+        />
+      </Relationships>`
+  );
+  zip.folder("word")?.file(
+    "document.xml",
+    `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+      <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+        <w:body>
+          <w:p><w:r><w:t>Master Services Agreement</w:t></w:r></w:p>
+          <w:p><w:r><w:t>Vendor will respond within two business days.</w:t></w:r></w:p>
+          <w:p><w:r><w:t>Payment will be due within 30 days.</w:t></w:r></w:p>
+        </w:body>
+      </w:document>`
+  );
+
+  const buffer = await zip.generateAsync({ type: "arraybuffer" });
+
+  return new File([buffer], "contract.docx", {
     type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
   });
 }

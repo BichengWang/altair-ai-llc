@@ -27,6 +27,7 @@ export async function requestReviewResponse({
   apiKey,
   baseUrl,
   documentName,
+  documentContext,
   model,
   selectedExcerpt,
   question,
@@ -46,11 +47,15 @@ export async function requestReviewResponse({
     {
       role: "system" as const,
       content:
-        "You are a contract review assistant. Answer only from the selected excerpt. If the excerpt is insufficient, say so plainly and suggest what the user should select next.",
+        "You are a contract review assistant. Use the uploaded document context to interpret the selected excerpt, but answer the user's question about the selected excerpt first. If the selection is insufficient even with the broader context, say so plainly and suggest what the user should select next.",
     },
     ...history.slice(-HISTORY_LIMIT).map((message) => ({
       role: message.role,
-      content: message.content,
+      content: message.selectedText
+        ? ["Selected excerpt for this turn:", message.selectedText, "", message.content].join(
+            "\n"
+          )
+        : message.content,
     })),
     {
       role: "user" as const,
@@ -58,6 +63,8 @@ export async function requestReviewResponse({
         `Document: ${documentName}`,
         "Selected excerpt:",
         selectedExcerpt.text,
+        "",
+        documentContext,
         "",
         `Question: ${question}`,
       ].join("\n"),
