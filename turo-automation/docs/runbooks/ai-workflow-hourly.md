@@ -7,9 +7,19 @@ Review the current development state, choose the single highest-priority next PR
 
 ## Statement
 
+Before Development, create {your branch name} by
+```shell
+git co -b {your branch name}
+```
+
 Use follow command to submit PR with {your pr title}:
 ```shell
 git pr "{your pr title}"
+```
+
+After submit PR, delete local branch and go to {main} branch by
+```
+git co main
 ```
 
 ## Instructions
