@@ -26,6 +26,11 @@ turo-automation/
   shared/
 ```
 
+## Packages
+- `web/` — internal React dashboard
+- `worker/` — background job runner and automation engine
+- `shared/` — shared types and domain helpers
+
 ## Working Principles
 
 1. Automate repetitive work first.
