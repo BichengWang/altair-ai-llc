@@ -43,16 +43,32 @@ Chronological notes on repo setup, architecture decisions, implementation progre
 - Added `docs/architecture/data-model.md`
 - Updated `docs/planning/daily-plan.md` to reflect completed planning work and the next executable step
 
+### Second runbook execution
+- Reviewed current repo state again from `main`
+- Confirmed there were no open PRs and the next ready task was the app skeleton milestone
+- Initialized an executable workspace under `turo-automation/` with:
+  - `package.json` and npm workspaces
+  - `tsconfig.base.json`
+  - `web/` Vite + React shell
+  - `worker/` TypeScript worker entrypoint
+  - `shared/` shared package for common exports
+  - `.gitignore` for local build artifacts and dependencies
+- Updated the root `README.md` to describe package roles
+- Updated `docs/planning/daily-plan.md` to mark the app skeleton milestone complete
+
 ### Decision
-- The next highest-priority implementation PR should initialize the executable app skeletons in `web/`, `worker/`, and `shared/`
-- Reason: docs and planning are now sufficient to support code scaffolding without guessing the product direction
+- The next highest-priority implementation PR should add the first Supabase schema/migration slice for `vehicles`, `guests`, `trips`, and `tasks`
+- Reason: the executable workspace now exists, so the next bottleneck is persistent data structure for the operational dashboard and worker flows
 
 ### Verification
-- Docs-only change
-- Performed consistency review across README, MVP spec, architecture overview, daily plan, and new planning docs
+- Ran `npm install` inside `turo-automation/`
+- Ran `npm run build` successfully for:
+  - `@turo-automation/shared`
+  - `@turo-automation/worker`
+  - `@turo-automation/web`
 
 ### Pending
-- Initialize executable app skeletons
-- Define the first Supabase schema/migration slice
-- Build the first internal dashboard shell
-- Add worker job framework
+- Add the first Supabase schema/migration slice
+- Build the first internal dashboard shell beyond placeholder content
+- Add worker job framework for scheduled automation
+- Connect shared domain models to persistence and UI

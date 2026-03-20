@@ -1,0 +1,15 @@
+{
+  "name": "turo-automation",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": [
+    "web",
+    "worker",
+    "shared"
+  ],
+  "scripts": {
+    "build": "npm run build --workspace @turo-automation/shared && npm run build --workspace @turo-automation/worker && npm run build --workspace @turo-automation/web",
+    "dev:web": "npm run dev --workspace @turo-automation/web",
+    "dev:worker": "npm run dev --workspace @turo-automation/worker"
+  }
+}
