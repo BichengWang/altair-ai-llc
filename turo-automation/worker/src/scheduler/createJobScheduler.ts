@@ -1,9 +1,14 @@
 import { logWorkerEvent } from "../lib/logger.js";
+import { withRetry } from "./withRetry.js";
 
 export interface ScheduledJob {
   name: string;
   intervalMs: number;
   run: () => Promise<void>;
+  /** Max retry attempts on failure (default: 3). Set to 1 to disable retries. */
+  maxAttempts?: number;
+  /** Base delay in ms between retries with exponential backoff (default: 2000). */
+  retryDelayMs?: number;
 }
 
 export interface JobScheduler {
@@ -14,7 +19,8 @@ export interface JobScheduler {
 /**
  * Minimal interval-based job scheduler.
  * Each job runs immediately on start, then repeats at its configured interval.
- * Job failures are logged but do not affect other jobs or the scheduler loop.
+ * Failed jobs are retried with exponential backoff up to maxAttempts.
+ * Job failures after all retries are logged but do not affect other jobs.
  */
 export function createJobScheduler(jobs: ScheduledJob[]): JobScheduler {
   const handles: ReturnType<typeof setInterval>[] = [];
@@ -22,7 +28,10 @@ export function createJobScheduler(jobs: ScheduledJob[]): JobScheduler {
   async function safeRun(job: ScheduledJob) {
     try {
       logWorkerEvent("scheduler.job_start", { name: job.name });
-      await job.run();
+      await withRetry(() => job.run(), job.name, {
+        maxAttempts: job.maxAttempts ?? 3,
+        delayMs: job.retryDelayMs ?? 2_000,
+      });
       logWorkerEvent("scheduler.job_done", { name: job.name });
     } catch (error) {
       logWorkerEvent("scheduler.job_error", {
