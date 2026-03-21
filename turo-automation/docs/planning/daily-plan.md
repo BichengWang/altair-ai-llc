@@ -3,22 +3,18 @@
 Use this file for the current working plan. Keep it short, current, and actionable.
 
 ## Date
-2026-03-19
+2026-03-20
 
 ## Objective
-Stand up the Turo Automation sub-repo and define the MVP for daily host operations.
+Freeze the interface-first architecture for `turo-automation` and make the subtree reviewable as the first implementation PR.
 
 ## Today's Priorities
-- [x] Create repo structure
-- [x] Create docs structure
-- [x] Create planning + logging files
-- [x] Define MVP workflows
-- [x] Draft data model
-- [x] Draft architecture overview
-- [x] Draft implementation roadmap
-- [x] Initialize `web/`, `worker/`, and `shared/` app skeletons
-- [x] Add the first Supabase schema and migrations for vehicles, guests, trips, and tasks
-- [ ] Build the first internal dashboard shell using the current domain model
+- [x] Save the host mode plan into the subtree
+- [x] Create shared domain, ports, fixtures, and use-case contracts
+- [x] Refactor the web shell to consume `TodayOpsSnapshot`
+- [x] Refactor the worker to run fixture-backed contract jobs
+- [x] Add build and contract-test verification
+- [ ] Wire shared contracts to real persistence adapters
 
 ## Candidate MVP Workflows
 1. Upcoming pickup / return dashboard
@@ -28,10 +24,10 @@ Stand up the Turo Automation sub-repo and define the MVP for daily host operatio
 5. Daily team summary
 
 ## Risks / Open Questions
-- What ingestion path will provide trip data reliably?
-- Which channels are approved for guest communication?
-- Which actions can be fully automated vs approval-only?
-- What are the exact daily pain points for the host team?
+- What is the first reliable ingestion adapter after manual import?
+- Which guest communication channels are approved after draft review?
+- Which missing Supabase schema slices should land first: incidents or messaging?
+- When should supervised Playwright be introduced as an optional adapter?
 
 ## Next Suggested Step
-Build the first internal dashboard shell with sections for vehicles, trips, tasks, and incidents, using the current domain model and schema as the source of truth.
+Implement Supabase-backed repository adapters and move the dashboard and worker off fixture context while keeping the same shared interfaces.

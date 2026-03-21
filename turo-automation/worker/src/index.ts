@@ -1,8 +1,11 @@
-import { appName, nextMilestone } from "@turo-automation/shared";
+import { createWorkerApp } from "./app/createWorkerApp.js";
 
-function main() {
-  console.log(`[worker] ${appName}`);
-  console.log(`[worker] next milestone: ${nextMilestone}`);
+async function main() {
+  const workerApp = createWorkerApp();
+  await workerApp.run();
 }
 
-main();
+void main().catch((error: unknown) => {
+  console.error("[worker] fatal", error);
+  process.exitCode = 1;
+});
