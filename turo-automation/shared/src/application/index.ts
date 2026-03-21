@@ -280,6 +280,39 @@ export interface GetTripTimelineUseCase {
   ): Promise<UseCaseResult<GetTripTimelineData>>;
 }
 
+export interface VehicleUtilizationItem {
+  vehicleId: string;
+  vehicleNickname: string;
+  totalTrips: number;
+  completedTrips: number;
+  activeTrips: number;
+  cancelledTrips: number;
+  totalRevenueAmount: number;
+  utilizationDays: number;
+  /** Total calendar days in the window */
+  windowDays: number;
+  /** Ratio of utilizationDays / windowDays (0–1) */
+  utilizationRate: number;
+}
+
+export interface GetVehicleUtilizationInput {
+  windowStart: ISODateString;
+  windowEnd: ISODateString;
+  generatedAt: ISODateString;
+}
+
+export interface GetVehicleUtilizationData {
+  items: VehicleUtilizationItem[];
+  windowStart: ISODateString;
+  windowEnd: ISODateString;
+}
+
+export interface GetVehicleUtilizationUseCase {
+  execute(
+    input: GetVehicleUtilizationInput,
+  ): Promise<UseCaseResult<GetVehicleUtilizationData>>;
+}
+
 function cloneValue<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;
 }
@@ -918,6 +951,94 @@ export function createGetTripTimelineUseCase(deps: {
       return makeResult(
         { tripId: input.tripId, entries },
         issues,
+        input.generatedAt,
+      );
+    },
+  };
+}
+
+export function createGetVehicleUtilizationUseCase(deps: {
+  tripRepository: TripRepository;
+  vehicles: Vehicle[];
+}): GetVehicleUtilizationUseCase {
+  return {
+    async execute(input) {
+      const trips = await deps.tripRepository.listTrips();
+      const windowStartMs = Date.parse(input.windowStart);
+      const windowEndMs = Date.parse(input.windowEnd);
+      const windowDays = Math.max(1, Math.round((windowEndMs - windowStartMs) / 86_400_000));
+
+      // Filter trips that overlap with the window
+      const windowTrips = trips.filter((trip) => {
+        const pickupMs = Date.parse(trip.pickupAt);
+        const returnMs = Date.parse(trip.returnAt);
+        return pickupMs < windowEndMs && returnMs > windowStartMs;
+      });
+
+      const vehiclesById = new Map(deps.vehicles.map((v) => [v.id, v]));
+      const statsByVehicle = new Map<string, {
+        totalTrips: number;
+        completedTrips: number;
+        activeTrips: number;
+        cancelledTrips: number;
+        totalRevenueAmount: number;
+        utilizationMs: number;
+      }>();
+
+      for (const vehicle of deps.vehicles) {
+        statsByVehicle.set(vehicle.id, {
+          totalTrips: 0,
+          completedTrips: 0,
+          activeTrips: 0,
+          cancelledTrips: 0,
+          totalRevenueAmount: 0,
+          utilizationMs: 0,
+        });
+      }
+
+      for (const trip of windowTrips) {
+        const stats = statsByVehicle.get(trip.vehicleId);
+        if (!stats) continue;
+
+        stats.totalTrips++;
+        if (trip.status === "completed") stats.completedTrips++;
+        else if (trip.status === "active") stats.activeTrips++;
+        else if (trip.status === "cancelled") stats.cancelledTrips++;
+        stats.totalRevenueAmount += trip.tripTotalAmount ?? 0;
+
+        // Clamp trip overlap to the window
+        const effectiveStart = Math.max(Date.parse(trip.pickupAt), windowStartMs);
+        const effectiveEnd = Math.min(Date.parse(trip.returnAt), windowEndMs);
+        if (effectiveEnd > effectiveStart) {
+          stats.utilizationMs += effectiveEnd - effectiveStart;
+        }
+      }
+
+      const items: VehicleUtilizationItem[] = [];
+      for (const vehicle of deps.vehicles) {
+        const stats = statsByVehicle.get(vehicle.id);
+        if (!stats) continue;
+        const utilizationDays = stats.utilizationMs / 86_400_000;
+        items.push({
+          vehicleId: vehicle.id,
+          vehicleNickname: vehicle.nickname,
+          totalTrips: stats.totalTrips,
+          completedTrips: stats.completedTrips,
+          activeTrips: stats.activeTrips,
+          cancelledTrips: stats.cancelledTrips,
+          totalRevenueAmount: Math.round(stats.totalRevenueAmount * 100) / 100,
+          utilizationDays: Math.round(utilizationDays * 100) / 100,
+          windowDays,
+          utilizationRate: Math.round((utilizationDays / windowDays) * 10_000) / 10_000,
+        });
+      }
+
+      // Sort by utilization rate descending
+      items.sort((a, b) => b.utilizationRate - a.utilizationRate);
+
+      return makeResult(
+        { items, windowStart: input.windowStart, windowEnd: input.windowEnd },
+        [],
         input.generatedAt,
       );
     },

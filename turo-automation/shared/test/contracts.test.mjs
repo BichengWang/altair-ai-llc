@@ -12,6 +12,7 @@ import {
   createGenerateMessageDraftsUseCase,
   createGetTodayOpsSnapshotUseCase,
   createGetTripTimelineUseCase,
+  createGetVehicleUtilizationUseCase,
   createImportTripsUseCase,
   createInMemoryGuestRepository,
   createInMemoryIncidentRepository,
@@ -567,4 +568,41 @@ test("GetTripTimeline returns sorted entries from events, tasks, incidents, and 
   assert.ok(kinds.includes("task"), "should include task");
   assert.ok(kinds.includes("incident"), "should include incident");
   assert.ok(kinds.includes("draft"), "should include draft");
+});
+
+test("GetVehicleUtilization computes utilization rates per vehicle", async () => {
+  const windowStart = "2026-03-01T00:00:00.000Z";
+  const windowEnd = "2026-03-31T00:00:00.000Z"; // 30 days
+
+  const vehicles = [
+    { id: "v1", vin: null, plate: null, nickname: "Polestar 2", make: "Polestar", model: "2", year: 2024, status: "active", location: null, odometer: null, fuelType: null, notes: null, createdAt: FIXTURE_NOW, updatedAt: FIXTURE_NOW },
+    { id: "v2", vin: null, plate: null, nickname: "Model Y", make: "Tesla", model: "Model Y", year: 2023, status: "active", location: null, odometer: null, fuelType: null, notes: null, createdAt: FIXTURE_NOW, updatedAt: FIXTURE_NOW },
+  ];
+
+  const tripRepository = createInMemoryTripRepository({
+    trips: [
+      // 10-day trip for v1
+      { id: "t1", externalTripId: "TU-1", vehicleId: "v1", guestId: "g1", status: "completed", pickupAt: "2026-03-05T00:00:00.000Z", returnAt: "2026-03-15T00:00:00.000Z", actualReturnAt: null, pickupLocation: "LAX", returnLocation: "LAX", tripTotalAmount: 300, deliveryRequired: false, source: "test", notes: null, createdAt: FIXTURE_NOW, updatedAt: FIXTURE_NOW },
+      // 5-day trip for v2
+      { id: "t2", externalTripId: "TU-2", vehicleId: "v2", guestId: "g2", status: "completed", pickupAt: "2026-03-10T00:00:00.000Z", returnAt: "2026-03-15T00:00:00.000Z", actualReturnAt: null, pickupLocation: "LAX", returnLocation: "LAX", tripTotalAmount: 150, deliveryRequired: false, source: "test", notes: null, createdAt: FIXTURE_NOW, updatedAt: FIXTURE_NOW },
+    ],
+    tripEvents: [],
+  });
+
+  const useCase = createGetVehicleUtilizationUseCase({ tripRepository, vehicles });
+  const result = await useCase.execute({ windowStart, windowEnd, generatedAt: FIXTURE_NOW });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.data.items.length, 2);
+
+  const v1Item = result.data.items.find((i) => i.vehicleId === "v1");
+  const v2Item = result.data.items.find((i) => i.vehicleId === "v2");
+
+  assert.equal(v1Item?.utilizationDays, 10, "v1 utilization should be 10 days");
+  assert.equal(v2Item?.utilizationDays, 5, "v2 utilization should be 5 days");
+  assert.equal(v1Item?.totalRevenueAmount, 300);
+  assert.equal(v2Item?.totalRevenueAmount, 150);
+
+  // v1 (10/30 ≈ 0.333) should rank above v2 (5/30 ≈ 0.167)
+  assert.equal(result.data.items[0]?.vehicleId, "v1", "higher utilization should rank first");
 });
