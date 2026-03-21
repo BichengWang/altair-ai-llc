@@ -46,27 +46,25 @@ PR slices:
 5. auto-generate pre-trip and return reminder drafts ✓ (GenerateMessageDrafts use case)
 6. incident creation from predefined triggers
 
-## Phase 4 — Reliability + Extensions
+## Phase 4 — Reliability + Extensions (items 1–2 complete)
 Objective: improve correctness, visibility, and operator trust.
 
 PR slices:
-1. audit log / event timeline improvements
-2. retry + failure handling for worker jobs
+1. audit log / event timeline improvements ✓ (`GetTripTimeline` use case)
+2. retry + failure handling for worker jobs ✓ (`withRetry` wrapper in scheduler)
 3. operational runbooks and alert tuning
 4. richer analytics and utilization reporting
 
 ## Current Highest-Priority Next PR
-Phase 3 item 6: incident creation from predefined triggers — auto-create incidents
-when trip anomalies are detected:
-- extend `detectLateReturns` to also detect trips with unresolved `issue` status
-- add `createIncidentFromTripStatus` helper for rule-based incident creation
-- wire into the scheduled `late_return_scan` job
-- add contract test
+Phase 4 item 3: operational runbooks and alert tuning:
+- document host-ops daily workflow in `docs/runbooks/host-ops-daily.md`
+- document incident response steps in `docs/runbooks/incident-response.md`
+- add threshold guidance (late return window, approval SLA, overdue task escalation)
 
 ## Why This Is Next
-- Phases 0–3 items 1–5 are complete
-- Incident creation from real trip data is the last remaining Phase 3 automation item
-- Once done, Phase 3 is complete and Phase 4 (reliability) is next
+- Phases 0–4 items 1–2 are complete
+- Runbooks help operators use the system effectively without relying on code exploration
+- Alert tuning guidance prevents noise from the automated notifications
 
 ## Rules for Future PRs
 - one highest-priority PR at a time

@@ -276,3 +276,34 @@ Chronological notes on repo setup, architecture decisions, implementation progre
 - Added 3 scheduler unit tests
 
 **Verification**: `npm test` — 15/15 pass
+
+### Phase 3 completion: DetectTripAnomalies + GenerateMessageDrafts (Iters 28–30)
+
+- Added `createGenerateMessageDraftsUseCase()`:
+  - Scans upcoming/active trips within configurable window (default 24h)
+  - Creates `pretrip_reminder` and `return_reminder` drafts with real template bodies
+  - Idempotent via `tripId:templateKey` deduplication
+  - Wired to both `run()` and `runScheduled()` at 30-min interval
+- Added `computeTripIssueIncidents()` + `createDetectTripAnomaliesUseCase()`:
+  - Combines late return detection + trip-issue incident creation
+  - Issue-status trips with return in the future get a new `other` incident
+  - Late-return path unchanged; overlap prevented by return-time check
+- Added `generate_drafts` to `JobName` domain type
+- Created PR #53 covering all Phase 2 + Phase 3 work
+
+**Verification**: `npm test` — 17/17 pass
+
+### Phase 4: Reliability + Extensions (Iters 31–32)
+
+- Added `worker/src/scheduler/withRetry.ts`:
+  - `withRetry(fn, label, opts)` with exponential backoff
+  - Default: 3 attempts, 2s base delay, factor 2
+  - Wired into `createJobScheduler` — each job auto-retried on failure
+  - Per-job `maxAttempts` and `retryDelayMs` overrides available
+- Added 4 `withRetry` unit tests + 1 scheduler retry integration test
+- Added `createGetTripTimelineUseCase()`:
+  - Aggregates `TripEvent`, `Task`, `Incident`, and `MessageDraft` for a tripId
+  - Returns entries sorted by timestamp ascending
+  - Contract test verifies all 4 entry kinds and sort order
+
+**Verification**: `npm test` — 22/22 pass
