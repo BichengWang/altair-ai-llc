@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {
   FIXTURE_NOW,
   FIXTURE_TODAY,
+  createActOnApprovalUseCase,
   createDetectLateReturnsUseCase,
   createFixtureContext,
   createGenerateLifecycleTasksUseCase,
@@ -138,4 +139,31 @@ test("ImportTrips upserts guests and vehicles when repos are provided", async ()
   const trips = await tripRepository.listTrips();
   assert.equal(trips[0].guestId, guests[0].id);
   assert.equal(trips[0].vehicleId, vehicles[0].id);
+});
+
+test("ActOnApproval transitions a pending approval to approved and updates draft state", async () => {
+  const context = createFixtureContext();
+  const noopNotifier = {
+    async publishDigest() { return { accepted: false, externalId: null }; },
+    async notifyApprovalRequested() { return { accepted: false, externalId: null }; },
+    async notifyIncidentDetected() { return { accepted: false, externalId: null }; },
+  };
+
+  const useCase = createActOnApprovalUseCase({
+    messageRepository: context.messageRepository,
+    notifier: noopNotifier,
+  });
+
+  const result = await useCase.execute({
+    approvalRequestId: "approval-tu-1001-pretrip",
+    decision: "approved",
+    reviewedBy: "test.reviewer",
+    reviewedAt: FIXTURE_NOW,
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.data.approvalRequest.status, "approved");
+  assert.equal(result.data.approvalRequest.reviewedBy, "test.reviewer");
+  assert.equal(result.data.draft.approvalStatus, "approved");
+  assert.equal(result.data.draft.state, "ready_for_review");
 });

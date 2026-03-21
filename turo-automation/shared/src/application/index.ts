@@ -215,6 +215,25 @@ export interface BuildDailyDigestUseCase {
   ): Promise<UseCaseResult<BuildDailyDigestData>>;
 }
 
+export interface ActOnApprovalInput {
+  approvalRequestId: string;
+  decision: "approved" | "rejected";
+  reviewedBy: string;
+  reviewedAt: ISODateString;
+  notes?: string;
+}
+
+export interface ActOnApprovalData {
+  approvalRequest: ApprovalRequest;
+  draft: MessageDraft;
+}
+
+export interface ActOnApprovalUseCase {
+  execute(
+    input: ActOnApprovalInput,
+  ): Promise<UseCaseResult<ActOnApprovalData>>;
+}
+
 function cloneValue<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;
 }
@@ -988,6 +1007,94 @@ export function createBuildDailyDigestUseCase(deps: {
         },
         snapshotResult.issues,
         input.generatedAt,
+      );
+    },
+  };
+}
+
+export function createActOnApprovalUseCase(deps: {
+  messageRepository: MessageRepository;
+  notifier: OpsNotifier;
+}): ActOnApprovalUseCase {
+  return {
+    async execute(input) {
+      const approvalRequests = await deps.messageRepository.listApprovalRequests();
+      const existing = approvalRequests.find((a) => a.id === input.approvalRequestId);
+
+      if (!existing) {
+        return makeResult(
+          { approvalRequest: null as unknown as ApprovalRequest, draft: null as unknown as MessageDraft },
+          [
+            {
+              code: "APPROVAL_REQUEST_NOT_FOUND",
+              message: `Approval request ${input.approvalRequestId} not found.`,
+              severity: "error",
+              entityType: "approval_request",
+              entityId: input.approvalRequestId,
+            },
+          ],
+          input.reviewedAt,
+        );
+      }
+
+      if (existing.status !== "pending") {
+        return makeResult(
+          { approvalRequest: existing, draft: null as unknown as MessageDraft },
+          [
+            {
+              code: "APPROVAL_ALREADY_DECIDED",
+              message: `Approval request ${input.approvalRequestId} is already ${existing.status}.`,
+              severity: "error",
+              entityType: "approval_request",
+              entityId: input.approvalRequestId,
+            },
+          ],
+          input.reviewedAt,
+        );
+      }
+
+      const updatedApproval: ApprovalRequest = {
+        ...existing,
+        status: input.decision,
+        reviewedBy: input.reviewedBy,
+        reviewedAt: input.reviewedAt,
+        notes: input.notes ?? existing.notes,
+      };
+
+      const [savedApprovals] = await Promise.all([
+        deps.messageRepository.saveApprovalRequests([updatedApproval]),
+      ]);
+      const savedApproval = savedApprovals[0]!;
+
+      // Update the associated draft state
+      const drafts = await deps.messageRepository.listDrafts();
+      const draft = drafts.find((d) => d.id === existing.draftId);
+      let savedDraft = draft ?? (null as unknown as MessageDraft);
+
+      if (draft) {
+        const updatedDraft: MessageDraft = {
+          ...draft,
+          approvalStatus: input.decision === "approved" ? "approved" : "rejected",
+          state: input.decision === "approved" ? "ready_for_review" : "closed",
+          updatedAt: input.reviewedAt,
+        };
+        const [saved] = await deps.messageRepository.saveDrafts([updatedDraft]);
+        savedDraft = saved!;
+      }
+
+      // Notify via Slack if needed (non-blocking, failure does not fail the use-case)
+      if (input.decision === "approved" && draft) {
+        await deps.notifier.notifyApprovalRequested({
+          approvalRequestId: savedApproval.id,
+          draftId: draft.id,
+          tripId: existing.tripId,
+        }).catch(() => {});
+      }
+
+      return makeResult(
+        { approvalRequest: savedApproval, draft: savedDraft },
+        [],
+        input.reviewedAt,
       );
     },
   };
