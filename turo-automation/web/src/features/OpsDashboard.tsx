@@ -1,12 +1,31 @@
 import type { TodayOpsSnapshot, UseCaseIssue } from "@turo-automation/shared";
+import { useState } from "react";
 import { formatCompactDateTime, formatLabel } from "../lib/format";
+import { actOnApproval } from "../lib/approvalActions";
 import { SectionCard } from "../ui/SectionCard";
 
 export function OpsDashboard(props: {
   snapshot: TodayOpsSnapshot;
   issues: UseCaseIssue[];
+  onApprovalActioned?: () => void;
 }) {
-  const { snapshot, issues } = props;
+  const { snapshot, issues, onApprovalActioned } = props;
+  const [actioningId, setActioningId] = useState<string | null>(null);
+  const [actionedIds, setActionedIds] = useState<Set<string>>(new Set());
+
+  async function handleApproval(
+    approvalRequestId: string,
+    decision: "approved" | "rejected"
+  ) {
+    setActioningId(approvalRequestId);
+    try {
+      await actOnApproval(approvalRequestId, decision, "web.reviewer");
+      setActionedIds((prev) => new Set([...prev, approvalRequestId]));
+      onApprovalActioned?.();
+    } finally {
+      setActioningId(null);
+    }
+  }
 
   return (
     <div className="dashboard-grid">
@@ -85,18 +104,47 @@ export function OpsDashboard(props: {
         title="Approval queue"
         subtitle="Guest-facing messaging stays draft-first and approval gated."
       >
-        {snapshot.pendingApprovals.map((approval) => (
-          <div className="list-row" key={approval.approvalRequestId}>
-            <div>
-              <strong>{approval.tripId}</strong>
-              <p>Requested by {approval.requestedBy}</p>
+        {snapshot.pendingApprovals.map((approval) => {
+          const isActioning = actioningId === approval.approvalRequestId;
+          const isActioned = actionedIds.has(approval.approvalRequestId);
+          return (
+            <div className="list-row" key={approval.approvalRequestId}>
+              <div>
+                <strong>{approval.tripId}</strong>
+                <p>Requested by {approval.requestedBy}</p>
+              </div>
+              <div className="list-meta">
+                <span className="pill">{formatLabel(approval.status)}</span>
+                <span>{formatCompactDateTime(approval.requestedAt)}</span>
+                {!isActioned && approval.status === "pending" && (
+                  <span className="approval-actions">
+                    <button
+                      className="btn-approve"
+                      disabled={isActioning}
+                      onClick={() =>
+                        handleApproval(approval.approvalRequestId, "approved")
+                      }
+                    >
+                      {isActioning ? "..." : "Approve"}
+                    </button>
+                    <button
+                      className="btn-reject"
+                      disabled={isActioning}
+                      onClick={() =>
+                        handleApproval(approval.approvalRequestId, "rejected")
+                      }
+                    >
+                      Reject
+                    </button>
+                  </span>
+                )}
+                {isActioned && (
+                  <span className="pill pill-completed">actioned</span>
+                )}
+              </div>
             </div>
-            <div className="list-meta">
-              <span className="pill">{formatLabel(approval.status)}</span>
-              <span>{formatCompactDateTime(approval.requestedAt)}</span>
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </SectionCard>
 
       <SectionCard
