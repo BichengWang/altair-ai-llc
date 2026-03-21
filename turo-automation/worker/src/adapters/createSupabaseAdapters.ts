@@ -7,9 +7,9 @@ import {
   createSupabaseTaskRepository,
   createSupabaseTripRepository,
   type Guest,
-  type TripImportSource,
   type Vehicle,
 } from "@turo-automation/shared";
+import { createEnvCsvTripImportSource } from "./csv/tripImportSource.js";
 
 // ---------------------------------------------------------------------------
 // Minimal Supabase row types for vehicles and guests (read-only lookup data)
@@ -34,17 +34,6 @@ interface VehicleRow {
 interface GuestRow {
   id: string;
   full_name: string;
-}
-
-// ---------------------------------------------------------------------------
-// Stub: trip import source (CSV / Turo export adapter planned in next slice)
-// ---------------------------------------------------------------------------
-function createNoopTripImportSource(): TripImportSource {
-  return {
-    async readTripImportRows() {
-      return [];
-    },
-  };
 }
 
 // ---------------------------------------------------------------------------
@@ -101,7 +90,7 @@ export async function createSupabaseAdapters() {
     jobRunRepository: createSupabaseJobRunRepository(client),
     // Real Slack notifier — no-op when SLACK_WEBHOOK_URL is absent
     notifier: createEnvSlackNotifier(),
-    // Trip import source — noop stub (CSV adapter planned in next slice)
-    tripImportSource: createNoopTripImportSource(),
+    // CSV trip import source — no-op when TRIP_IMPORT_CSV_PATH is absent
+    tripImportSource: createEnvCsvTripImportSource(),
   };
 }

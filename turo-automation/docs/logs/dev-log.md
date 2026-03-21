@@ -185,3 +185,36 @@ Chronological notes on repo setup, architecture decisions, implementation progre
 - Implement Slack notifier adapter (`SLACK_WEBHOOK_URL` env var)
 - Implement real trip import-source adapter
 - Add `.env.example` documenting required environment variables
+
+### Slack notifier adapter
+
+- Added `shared/src/adapters/slack/notifier.ts` with:
+  - `createSlackNotifier(webhookUrl)` — posts to a Slack incoming webhook
+  - `createEnvSlackNotifier()` — reads `SLACK_WEBHOOK_URL`; returns no-op when absent
+- Wired into `createSupabaseAdapters` — replaces the inline no-op notifier
+- Added `.env.example` with documentation for `SUPABASE_URL`, `SUPABASE_KEY`, `VITE_SUPABASE_URL`, `VITE_SUPABASE_KEY`, `SLACK_WEBHOOK_URL`
+
+### Architecture docs
+
+- Rewrote `docs/architecture/overview.md` to reflect implemented adapter layer, env-gating pattern, and active/planned integrations table
+
+### CSV trip import-source adapter
+
+- Added `worker/src/adapters/csv/tripImportSource.ts`:
+  - `createCsvTripImportSource(filePath)` — reads a CSV file and maps rows to `TripImportRow[]`
+  - `createEnvCsvTripImportSource()` — reads `TRIP_IMPORT_CSV_PATH`; returns no-op when absent
+  - Built-in CSV parser handles quoted fields; skips rows missing required fields
+- Wired into `createSupabaseAdapters` — replaces the inline noop import source
+- Added `TRIP_IMPORT_CSV_PATH` to `.env.example` with expected column documentation
+- Added 3 CSV adapter unit tests (`worker/test/csv-import.test.mjs`)
+- Updated root `package.json` test script to include CSV tests
+
+### Verification
+
+- `npm test` — 7/7 pass
+
+### Next
+
+- Add sample trips.csv to help operators get started without configuring a full import pipeline
+- Consider a simple Turo-export → CSV mapping script
+- Wire the Slack notifier to the web approval workflow (approval button → Slack notification)
