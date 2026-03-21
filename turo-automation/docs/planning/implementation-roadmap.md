@@ -25,7 +25,7 @@ PR slices:
 6. add Supabase-backed repository adapters in `shared/src/adapters/supabase/` ✓
 7. wire worker + web to Supabase adapters (env-gated, fixture fallback) ✓
 
-## Phase 2 — Real Notifications + Import ✓ (items 1–4 complete)
+## Phase 2 — Real Notifications + Import ✓
 Objective: connect the system to real external services.
 
 PR slices:
@@ -33,17 +33,18 @@ PR slices:
 2. trip import-source adapter (CSV / Turo export) ✓
 3. `.env.example` with required environment variable documentation ✓
 4. approval state transitions via UI actions ✓
-5. templated pre-trip and return reminder drafts
+5. templated pre-trip and return reminder drafts ✓
 
-## Phase 3 — Automation Engine (item 1 complete)
+## Phase 3 — Automation Engine (items 1–4 complete)
 Objective: reduce repetitive manual work with safe background jobs.
 
 PR slices:
 1. scheduled worker framework (`WORKER_MODE=scheduled`, interval-based) ✓
-2. trip lifecycle task generation from real trips
-3. late return detection with real Slack alerts
-4. daily ops digest to Slack
-5. incident creation from predefined triggers
+2. trip lifecycle task generation from real trips ✓ (GenerateLifecycleTasks use case + scheduler)
+3. late return detection with real Slack alerts ✓ (DetectLateReturns + Slack notifier)
+4. daily ops digest to Slack ✓ (BuildDailyDigest + scheduled)
+5. auto-generate pre-trip and return reminder drafts ✓ (GenerateMessageDrafts use case)
+6. incident creation from predefined triggers
 
 ## Phase 4 — Reliability + Extensions
 Objective: improve correctness, visibility, and operator trust.
@@ -55,19 +56,17 @@ PR slices:
 4. richer analytics and utilization reporting
 
 ## Current Highest-Priority Next PR
-Add a `generate_drafts` worker job that automatically creates pre-trip and
-return-reminder message drafts for upcoming/active trips that don't yet have
-an outbound draft:
-- new use case `createGenerateMessageDraftsUseCase` in shared application
-- scans trips for upcoming pickup (within 24h) and active return (within 24h)
-- creates `pretrip_reminder` and `return_reminder` drafts with real template bodies
-- add to scheduled worker as `generate_drafts` job (interval: 30 min)
+Phase 3 item 6: incident creation from predefined triggers — auto-create incidents
+when trip anomalies are detected:
+- extend `detectLateReturns` to also detect trips with unresolved `issue` status
+- add `createIncidentFromTripStatus` helper for rule-based incident creation
+- wire into the scheduled `late_return_scan` job
 - add contract test
 
 ## Why This Is Next
-- Phase 2 is fully complete; Phase 3 item 1 (scheduler) is done
-- The messaging workflow has real templates but no automatic draft generation
-- Automatic draft creation is the next step toward autonomous-but-approved messaging
+- Phases 0–3 items 1–5 are complete
+- Incident creation from real trip data is the last remaining Phase 3 automation item
+- Once done, Phase 3 is complete and Phase 4 (reliability) is next
 
 ## Rules for Future PRs
 - one highest-priority PR at a time

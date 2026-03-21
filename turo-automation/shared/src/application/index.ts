@@ -680,6 +680,143 @@ export function computeLateReturnIncidents(input: {
   );
 }
 
+export interface DetectTripAnomaliesInput {
+  asOf: ISODateString;
+  openedBy: string;
+}
+
+export interface DetectTripAnomaliesData {
+  incidentsCreated: Incident[];
+  lateReturns: number;
+  tripIssues: number;
+}
+
+export interface DetectTripAnomaliesUseCase {
+  execute(
+    input: DetectTripAnomaliesInput,
+  ): Promise<UseCaseResult<DetectTripAnomaliesData>>;
+}
+
+export function computeTripIssueIncidents(input: {
+  asOf: ISODateString;
+  openedBy: string;
+  trips: Trip[];
+  incidents: Incident[];
+  vehicles: Vehicle[];
+}): Incident[] {
+  const openIssueIncidentByTripId = new Set(
+    input.incidents
+      .filter(
+        (incident) =>
+          incident.type === "other" &&
+          incident.status !== "resolved" &&
+          incident.status !== "closed" &&
+          incident.tripId,
+      )
+      .map((incident) => incident.tripId as string),
+  );
+  const vehiclesById = new Map(input.vehicles.map((v) => [v.id, v]));
+
+  const asOfMs = Date.parse(input.asOf);
+
+  return input.trips
+    .filter(
+      (trip) =>
+        trip.status === "issue" &&
+        // Exclude trips already past return time — those are handled by late return detection
+        Date.parse(trip.returnAt) >= asOfMs &&
+        !openIssueIncidentByTripId.has(trip.id),
+    )
+    .map((trip) => {
+      const vehicle = vehiclesById.get(trip.vehicleId);
+      const vehicleLabel = vehicle?.nickname ?? trip.vehicleId;
+      return {
+        id: stableId(["incident", trip.id, "trip-issue"]),
+        tripId: trip.id,
+        vehicleId: trip.vehicleId,
+        type: "other" as const,
+        severity: "medium" as const,
+        status: "open" as const,
+        summary: `Trip issue flagged on ${vehicleLabel}`,
+        details: `Trip ${trip.externalTripId} is in 'issue' status with no active incident.`,
+        ownerId: input.openedBy,
+        openedAt: input.asOf,
+        resolvedAt: null,
+        createdAt: input.asOf,
+        updatedAt: input.asOf,
+      };
+    });
+}
+
+export function createDetectTripAnomaliesUseCase(deps: {
+  tripRepository: TripRepository;
+  incidentRepository: IncidentRepository;
+  notifier: OpsNotifier;
+  vehicles: Vehicle[];
+}): DetectTripAnomaliesUseCase {
+  return {
+    async execute(input) {
+      const [trips, incidents] = await Promise.all([
+        deps.tripRepository.listTrips(),
+        deps.incidentRepository.listIncidents(),
+      ]);
+
+      const lateReturnResult = computeLateReturnIncidents({
+        asOf: input.asOf,
+        openedBy: input.openedBy,
+        trips,
+        incidents,
+        vehicles: deps.vehicles,
+      });
+
+      const tripIssueIncidents = computeTripIssueIncidents({
+        asOf: input.asOf,
+        openedBy: input.openedBy,
+        trips,
+        incidents,
+        vehicles: deps.vehicles,
+      });
+
+      const allNew = [...lateReturnResult.data.incidentsCreated, ...tripIssueIncidents];
+
+      if (allNew.length > 0) {
+        await deps.incidentRepository.saveIncidents(allNew);
+        await Promise.all(
+          allNew.map((incident) =>
+            deps.notifier.notifyIncidentDetected({
+              incidentId: incident.id,
+              tripId: incident.tripId,
+              type: incident.type,
+            }).catch(() => {}),
+          ),
+        );
+      }
+
+      const useCaseIssues: UseCaseIssue[] =
+        allNew.length > 0
+          ? [
+              {
+                code: "ANOMALIES_DETECTED",
+                message: `${allNew.length} trip anomaly incidents created (${lateReturnResult.data.incidentsCreated.length} late returns, ${tripIssueIncidents.length} trip issues).`,
+                severity: "warning" as const,
+                entityType: "incident",
+              },
+            ]
+          : [];
+
+      return makeResult(
+        {
+          incidentsCreated: allNew,
+          lateReturns: lateReturnResult.data.incidentsCreated.length,
+          tripIssues: tripIssueIncidents.length,
+        },
+        useCaseIssues,
+        input.asOf,
+      );
+    },
+  };
+}
+
 export function createGetTodayOpsSnapshotUseCase(deps: {
   tripRepository: TripRepository;
   taskRepository: TaskRepository;

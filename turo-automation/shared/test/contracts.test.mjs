@@ -6,6 +6,7 @@ import {
   createActOnApprovalUseCase,
   createCreateMessageDraftUseCase,
   createDetectLateReturnsUseCase,
+  createDetectTripAnomaliesUseCase,
   createFixtureContext,
   createGenerateLifecycleTasksUseCase,
   createGenerateMessageDraftsUseCase,
@@ -369,4 +370,76 @@ test("GenerateMessageDrafts creates pretrip and return reminder drafts within wi
   const result2 = await useCase.execute({ asOf, requestedBy: "test-runner" });
   assert.equal(result2.data.createdDrafts.length, 0);
   assert.equal(result2.data.skippedCount, 2); // both trips are still in window but drafts already exist
+});
+
+test("DetectTripAnomalies creates late return AND trip issue incidents", async () => {
+  const notifier = {
+    async publishDigest() { return { accepted: false, externalId: null }; },
+    async notifyApprovalRequested() { return { accepted: false, externalId: null }; },
+    async notifyIncidentDetected() { return { accepted: false, externalId: null }; },
+  };
+
+  const vehicle = { id: "v1", vin: null, plate: null, nickname: "Polestar 2", make: "Polestar", model: "2", year: 2024, status: "active", location: null, odometer: null, fuelType: null, notes: null, createdAt: FIXTURE_NOW, updatedAt: FIXTURE_NOW };
+
+  const tripRepository = createInMemoryTripRepository({
+    trips: [
+      // Late return: active trip past its return time
+      {
+        id: "trip-late",
+        externalTripId: "TU-LATE",
+        vehicleId: "v1",
+        guestId: "g1",
+        status: "active",
+        pickupAt: "2026-03-18T10:00:00.000Z",
+        returnAt: "2026-03-20T10:00:00.000Z", // 8h before FIXTURE_NOW
+        actualReturnAt: null,
+        pickupLocation: "LAX",
+        returnLocation: "LAX",
+        tripTotalAmount: 100,
+        deliveryRequired: false,
+        source: "test",
+        notes: null,
+        createdAt: FIXTURE_NOW,
+        updatedAt: FIXTURE_NOW,
+      },
+      // Issue status: trip still within return window (return in future) — no matching incident
+      {
+        id: "trip-issue",
+        externalTripId: "TU-ISSUE",
+        vehicleId: "v1",
+        guestId: "g2",
+        status: "issue",
+        pickupAt: "2026-03-20T10:00:00.000Z",
+        returnAt: "2026-03-21T10:00:00.000Z", // return is tomorrow — not yet late
+        actualReturnAt: null,
+        pickupLocation: "LAX",
+        returnLocation: "LAX",
+        tripTotalAmount: 120,
+        deliveryRequired: false,
+        source: "test",
+        notes: null,
+        createdAt: FIXTURE_NOW,
+        updatedAt: FIXTURE_NOW,
+      },
+    ],
+    tripEvents: [],
+  });
+  const incidentRepository = createInMemoryIncidentRepository({ incidents: [] });
+
+  const useCase = createDetectTripAnomaliesUseCase({
+    tripRepository,
+    incidentRepository,
+    notifier,
+    vehicles: [vehicle],
+  });
+
+  const result = await useCase.execute({ asOf: FIXTURE_NOW, openedBy: "test-runner" });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.data.incidentsCreated.length, 2);
+  assert.equal(result.data.lateReturns, 1);
+  assert.equal(result.data.tripIssues, 1);
+
+  const types = result.data.incidentsCreated.map((i) => i.type).sort();
+  assert.deepEqual(types, ["late_return", "other"]);
 });
