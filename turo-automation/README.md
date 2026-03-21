@@ -35,6 +35,7 @@ turo-automation/
 - `shared/` — domain types, port interfaces, use-case implementations, and adapter implementations (Supabase, Slack)
 - `worker/` — background job runner; dispatches six core jobs on each invocation or runs them on intervals in scheduled mode
 - `web/` — internal React dashboard showing today's ops snapshot, trip timeline drill-down, vehicle utilization, approval actions, and incident actions
+- `browser-agent/` — Playwright-first browser automation package for session bootstrap/check and future Turo web extraction flows
 
 ## Getting Started
 
