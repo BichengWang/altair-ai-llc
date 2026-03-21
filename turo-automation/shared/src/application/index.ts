@@ -1,6 +1,7 @@
 import type {
   ApprovalRequest,
   ApprovalStatus,
+  Guest,
   Incident,
   ISODateString,
   JobName,
@@ -20,6 +21,7 @@ import type {
 } from "../domain/index.js";
 import type {
   BrowserAssistPort,
+  GuestRepository,
   IncidentRepository,
   JobRunRepository,
   MessageRepository,
@@ -27,6 +29,7 @@ import type {
   TaskRepository,
   TripImportSource,
   TripRepository,
+  VehicleRepository,
 } from "../ports/index.js";
 
 export type UseCaseSeverity = "info" | "warning" | "error";
@@ -628,6 +631,10 @@ export function createGetTodayOpsSnapshotUseCase(deps: {
 export function createImportTripsUseCase(deps: {
   tripImportSource: TripImportSource;
   tripRepository: TripRepository;
+  /** Optional: when provided, guests derived from import rows are upserted before trips. */
+  guestRepository?: GuestRepository;
+  /** Optional: when provided, vehicles derived from import rows are upserted before trips. */
+  vehicleRepository?: VehicleRepository;
 }): ImportTripsUseCase {
   return {
     async execute(input) {
@@ -639,6 +646,73 @@ export function createImportTripsUseCase(deps: {
       const tripsByExternalId = new Map(
         existingTrips.map((trip) => [trip.externalTripId, trip] as const),
       );
+
+      // Upsert guests derived from import rows when a guest repository is provided.
+      if (deps.guestRepository && rows.length > 0) {
+        const existingGuests = await deps.guestRepository.listGuests();
+        const existingGuestIds = new Set(existingGuests.map((g) => g.id));
+        const seenGuestIds = new Set<string>();
+        const newGuests: Guest[] = [];
+        for (const row of rows) {
+          const guestId = stableId(["guest", row.guestFullName]);
+          if (!existingGuestIds.has(guestId) && !seenGuestIds.has(guestId)) {
+            seenGuestIds.add(guestId);
+            const nameParts = row.guestFullName.split(" ");
+            newGuests.push({
+              id: guestId,
+              firstName: nameParts[0] ?? "",
+              lastName: nameParts.slice(1).join(" "),
+              fullName: row.guestFullName,
+              phone: row.guestPhone,
+              email: row.guestEmail,
+              driverLicenseLast4: null,
+              rating: null,
+              notes: null,
+              createdAt: input.importedAt,
+              updatedAt: input.importedAt,
+            });
+          }
+        }
+        if (newGuests.length > 0) {
+          await deps.guestRepository.saveGuests(newGuests);
+        }
+      }
+
+      // Upsert vehicles derived from import rows when a vehicle repository is provided.
+      if (deps.vehicleRepository && rows.length > 0) {
+        const existingVehicles = await deps.vehicleRepository.listVehicles();
+        const existingVehicleIds = new Set(existingVehicles.map((v) => v.id));
+        const seenVehicleIds = new Set<string>();
+        const newVehicles: Vehicle[] = [];
+        for (const row of rows) {
+          const vehicleId = stableId(["vehicle", row.vehicleNickname]);
+          if (
+            !existingVehicleIds.has(vehicleId) &&
+            !seenVehicleIds.has(vehicleId)
+          ) {
+            seenVehicleIds.add(vehicleId);
+            newVehicles.push({
+              id: vehicleId,
+              vin: null,
+              plate: null,
+              nickname: row.vehicleNickname,
+              make: row.vehicleNickname,
+              model: row.vehicleNickname,
+              year: null,
+              status: "active",
+              location: null,
+              odometer: null,
+              fuelType: null,
+              notes: "Auto-created from CSV import. Update make/model/year.",
+              createdAt: input.importedAt,
+              updatedAt: input.importedAt,
+            });
+          }
+        }
+        if (newVehicles.length > 0) {
+          await deps.vehicleRepository.saveVehicles(newVehicles);
+        }
+      }
 
       const importedTrips: Trip[] = [];
       const importedTripEvents: TripEvent[] = [];
@@ -1098,6 +1172,50 @@ export function createInMemoryJobRunRepository(seed: {
     async saveJobRun(jobRun) {
       state.jobRuns.push(cloneValue(jobRun));
       return cloneValue(jobRun);
+    },
+  };
+}
+
+export function createInMemoryVehicleRepository(seed: {
+  vehicles: Vehicle[];
+}): VehicleRepository {
+  const state = { vehicles: cloneValue(seed.vehicles) };
+  return {
+    async listVehicles() {
+      return cloneValue(state.vehicles);
+    },
+    async saveVehicles(vehicles) {
+      for (const vehicle of vehicles) {
+        const index = state.vehicles.findIndex((v) => v.id === vehicle.id);
+        if (index >= 0) {
+          state.vehicles[index] = cloneValue(vehicle);
+        } else {
+          state.vehicles.push(cloneValue(vehicle));
+        }
+      }
+      return cloneValue(vehicles);
+    },
+  };
+}
+
+export function createInMemoryGuestRepository(seed: {
+  guests: Guest[];
+}): GuestRepository {
+  const state = { guests: cloneValue(seed.guests) };
+  return {
+    async listGuests() {
+      return cloneValue(state.guests);
+    },
+    async saveGuests(guests) {
+      for (const guest of guests) {
+        const index = state.guests.findIndex((g) => g.id === guest.id);
+        if (index >= 0) {
+          state.guests[index] = cloneValue(guest);
+        } else {
+          state.guests.push(cloneValue(guest));
+        }
+      }
+      return cloneValue(guests);
     },
   };
 }

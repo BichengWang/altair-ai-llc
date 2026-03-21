@@ -73,6 +73,9 @@ export function createWorkerApp() {
       const importTrips = createImportTripsUseCase({
         tripImportSource: adapters.tripImportSource,
         tripRepository: adapters.tripRepository,
+        // Optional: upsert guests/vehicles before trips to satisfy FK constraints
+        ...("guestRepository" in adapters && { guestRepository: adapters.guestRepository }),
+        ...("vehicleRepository" in adapters && { vehicleRepository: adapters.vehicleRepository }),
       });
       const generateLifecycleTasks = createGenerateLifecycleTasksUseCase({
         tripRepository: adapters.tripRepository,

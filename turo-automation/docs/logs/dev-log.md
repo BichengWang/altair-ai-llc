@@ -218,3 +218,20 @@ Chronological notes on repo setup, architecture decisions, implementation progre
 - Add sample trips.csv to help operators get started without configuring a full import pipeline
 - Consider a simple Turo-export → CSV mapping script
 - Wire the Slack notifier to the web approval workflow (approval button → Slack notification)
+
+### VehicleRepository + GuestRepository ports (fix import FK constraint gap)
+
+- Added `VehicleRepository` and `GuestRepository` interfaces to `shared/src/ports/index.ts`
+- Added `createInMemoryVehicleRepository` and `createInMemoryGuestRepository` to `shared/src/application/index.ts`
+- Added Supabase implementations: `shared/src/adapters/supabase/vehicleRepository.ts` and `guestRepository.ts`
+- Updated `createImportTripsUseCase` to accept optional `guestRepository?` and `vehicleRepository?` — when provided, derives and upserts guests/vehicles from CSV rows before saving trips (fixes FK constraint failures on real Supabase)
+- Updated `createSupabaseAdapters` to use the new repos instead of raw array fetches
+- Updated `createWorkerApp.ts` to pass repos to import use-case in Supabase mode
+
+**Verification**: `npm test` — 7/7 pass
+
+### Next
+
+- Add approval action endpoint (approve/reject a pending message draft)
+- Consider web API route for approval actions backed by Supabase
+- Improve coverage: add test for CSV import guest/vehicle upsert path
