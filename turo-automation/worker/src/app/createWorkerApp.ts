@@ -3,6 +3,7 @@ import {
   createBuildDailyDigestUseCase,
   createDetectLateReturnsUseCase,
   createGenerateLifecycleTasksUseCase,
+  createGenerateMessageDraftsUseCase,
   createGetTodayOpsSnapshotUseCase,
   createImportTripsUseCase,
   type JobName,
@@ -12,6 +13,7 @@ import {
 import { createFixtureAdapters } from "../adapters/createFixtureAdapters.js";
 import { createSupabaseAdapters } from "../adapters/createSupabaseAdapters.js";
 import { runDailyDigestJob } from "../jobs/runDailyDigestJob.js";
+import { runGenerateMessageDraftsJob } from "../jobs/runGenerateMessageDraftsJob.js";
 import { runImportTripsJob } from "../jobs/runImportTripsJob.js";
 import { runLateReturnScanJob } from "../jobs/runLateReturnScanJob.js";
 import { runLifecycleTasksJob } from "../jobs/runLifecycleTasksJob.js";
@@ -93,6 +95,13 @@ export function createWorkerApp() {
         getTodayOpsSnapshot,
         notifier: adapters.notifier,
       });
+      const generateMessageDrafts = createGenerateMessageDraftsUseCase({
+        tripRepository: adapters.tripRepository,
+        messageRepository: adapters.messageRepository,
+        notifier: adapters.notifier,
+        guests: adapters.guests,
+        vehicles: adapters.vehicles,
+      });
 
       const snapshotResult = await runTodayOpsSnapshotJob({
         useCase: getTodayOpsSnapshot,
@@ -162,6 +171,23 @@ export function createWorkerApp() {
         })
       );
 
+      const generateDraftsResult = await runGenerateMessageDraftsJob({
+        useCase: generateMessageDrafts,
+        asOf: generatedAt,
+        requestedBy: "worker.bootstrap",
+      });
+      logUseCaseResult("generate_drafts", generateDraftsResult);
+      await persistJobRun(
+        adapters.jobRunRepository,
+        buildJobRun({
+          jobName: "generate_drafts",
+          startedAt: generatedAt,
+          summary: `Generated ${generateDraftsResult.data.createdDrafts.length} message drafts.`,
+          issueCount: generateDraftsResult.issues.length,
+          ok: generateDraftsResult.ok,
+        })
+      );
+
       const dailyDigestResult = await runDailyDigestJob({
         useCase: buildDailyDigest,
         today,
@@ -187,10 +213,11 @@ export function createWorkerApp() {
      * The scheduler keeps the process alive until SIGTERM or SIGINT.
      *
      * Default intervals (overridable via env vars):
-     *   INTERVAL_IMPORT_MS         default  5 min
-     *   INTERVAL_LIFECYCLE_MS      default 15 min
-     *   INTERVAL_LATE_RETURN_MS    default 15 min
-     *   INTERVAL_DAILY_DIGEST_MS   default  1 hour
+     *   INTERVAL_IMPORT_MS              default  5 min
+     *   INTERVAL_LIFECYCLE_MS           default 15 min
+     *   INTERVAL_LATE_RETURN_MS         default 15 min
+     *   INTERVAL_GENERATE_DRAFTS_MS     default 30 min
+     *   INTERVAL_DAILY_DIGEST_MS        default  1 hour
      */
     async runScheduled() {
       const mode = useSupabase ? "supabase" : "fixture";
@@ -230,11 +257,19 @@ export function createWorkerApp() {
         getTodayOpsSnapshot,
         notifier: adapters.notifier,
       });
+      const generateMessageDrafts = createGenerateMessageDraftsUseCase({
+        tripRepository: adapters.tripRepository,
+        messageRepository: adapters.messageRepository,
+        notifier: adapters.notifier,
+        guests: adapters.guests,
+        vehicles: adapters.vehicles,
+      });
 
       const env = process.env;
       const intervalImport = Number(env["INTERVAL_IMPORT_MS"] ?? 5 * 60_000);
       const intervalLifecycle = Number(env["INTERVAL_LIFECYCLE_MS"] ?? 15 * 60_000);
       const intervalLateReturn = Number(env["INTERVAL_LATE_RETURN_MS"] ?? 15 * 60_000);
+      const intervalGenerateDrafts = Number(env["INTERVAL_GENERATE_DRAFTS_MS"] ?? 30 * 60_000);
       const intervalDailyDigest = Number(env["INTERVAL_DAILY_DIGEST_MS"] ?? 60 * 60_000);
 
       const scheduler = createJobScheduler([
@@ -301,6 +336,29 @@ export function createWorkerApp() {
                 jobName: "late_return_scan",
                 startedAt: now,
                 summary: `Created ${result.data.incidentsCreated.length} late return incidents.`,
+                issueCount: result.issues.length,
+                ok: result.ok,
+              })
+            );
+          },
+        },
+        {
+          name: "generate_drafts",
+          intervalMs: intervalGenerateDrafts,
+          async run() {
+            const now = getWorkerNowIso();
+            const result = await runGenerateMessageDraftsJob({
+              useCase: generateMessageDrafts,
+              asOf: now,
+              requestedBy: "scheduler",
+            });
+            logUseCaseResult("generate_drafts", result);
+            await persistJobRun(
+              adapters.jobRunRepository,
+              buildJobRun({
+                jobName: "generate_drafts",
+                startedAt: now,
+                summary: `Generated ${result.data.createdDrafts.length} message drafts.`,
                 issueCount: result.issues.length,
                 ok: result.ok,
               })

@@ -248,3 +248,31 @@ Chronological notes on repo setup, architecture decisions, implementation progre
 **Verification**: `npm run build` + `npm test` — 9/9 pass, clean build
 
 **Phase 2 status**: items 1–4 complete; item 5 (templated message bodies) is next
+
+### Message body template renderer (Iter 25)
+
+- Added `renderMessageTemplate(ctx)` to `shared/src/application/index.ts`:
+  - Supports `pretrip_reminder`, `return_reminder`, `incident_notice` template keys
+  - Renders real guest name, vehicle nickname, trip ID, and dates into the message body
+  - Falls back to `[templateKey] Trip ... — Vehicle — Guest` for unknown keys
+- Updated `createCreateMessageDraftUseCase` to accept optional `guests[]` and `vehicles[]`; renders template body when present
+- Added 3 contract tests: template rendering assertions for pre-trip and return reminder, plus end-to-end draft creation test
+
+**Verification**: `npm test` — 12/12 pass
+
+### Scheduled worker framework (Iter 26)
+
+- Added `worker/src/scheduler/createJobScheduler.ts`:
+  - `createJobScheduler(jobs[])` takes `{name, intervalMs, run}` entries
+  - Each job runs immediately on `start()`, then repeats at `intervalMs`
+  - Job failures are caught, logged, and isolated — they do not affect other jobs
+  - `stop()` clears all intervals for graceful shutdown
+- Added `runScheduled()` to `createWorkerApp()`:
+  - Same use-case wiring as `run()` but feeds a `JobScheduler`
+  - Job intervals configurable via env vars (`INTERVAL_IMPORT_MS`, `INTERVAL_LIFECYCLE_MS`, etc.)
+  - Registers `SIGTERM` / `SIGINT` handlers for graceful shutdown
+- Updated `worker/src/index.ts`: reads `WORKER_MODE` env var; `scheduled` → `runScheduled()`, else `run()`
+- Added `WORKER_MODE` and interval vars to `.env.example`
+- Added 3 scheduler unit tests
+
+**Verification**: `npm test` — 15/15 pass

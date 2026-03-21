@@ -234,6 +234,26 @@ export interface ActOnApprovalUseCase {
   ): Promise<UseCaseResult<ActOnApprovalData>>;
 }
 
+export interface GenerateMessageDraftsInput {
+  asOf: ISODateString;
+  requestedBy: string;
+  /** Hours before pickup to generate a pre-trip reminder (default: 24) */
+  preTripWindowHours?: number;
+  /** Hours before return to generate a return reminder (default: 24) */
+  returnWindowHours?: number;
+}
+
+export interface GenerateMessageDraftsData {
+  createdDrafts: MessageDraft[];
+  skippedCount: number;
+}
+
+export interface GenerateMessageDraftsUseCase {
+  execute(
+    input: GenerateMessageDraftsInput,
+  ): Promise<UseCaseResult<GenerateMessageDraftsData>>;
+}
+
 function cloneValue<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;
 }
@@ -1071,6 +1091,180 @@ export function createBuildDailyDigestUseCase(deps: {
         snapshotResult.issues,
         input.generatedAt,
       );
+    },
+  };
+}
+
+export function createGenerateMessageDraftsUseCase(deps: {
+  tripRepository: TripRepository;
+  messageRepository: MessageRepository;
+  notifier: OpsNotifier;
+  guests: Array<{ id: string; firstName?: string; fullName: string }>;
+  vehicles: Vehicle[];
+}): GenerateMessageDraftsUseCase {
+  return {
+    async execute(input) {
+      const preTripWindowMs = (input.preTripWindowHours ?? 24) * 3_600_000;
+      const returnWindowMs = (input.returnWindowHours ?? 24) * 3_600_000;
+      const asOfMs = Date.parse(input.asOf);
+
+      const [trips, existingDrafts, existingThreads] = await Promise.all([
+        deps.tripRepository.listTrips(),
+        deps.messageRepository.listDrafts(),
+        deps.messageRepository.listThreads(),
+      ]);
+
+      const existingDraftKeys = new Set(
+        existingDrafts.map((d) => `${d.tripId}:${d.templateKey}`),
+      );
+      const threadByTripId = new Map(
+        existingThreads.map((t) => [t.tripId, t]),
+      );
+      const guestsById = new Map(deps.guests.map((g) => [g.id, g]));
+      const vehiclesById = new Map(deps.vehicles.map((v) => [v.id, v]));
+
+      const newDrafts: MessageDraft[] = [];
+      const newThreads: MessageThread[] = [];
+      let skippedCount = 0;
+
+      for (const trip of trips) {
+        const pickupMs = Date.parse(trip.pickupAt);
+        const returnMs = Date.parse(trip.returnAt);
+        const guest = guestsById.get(trip.guestId);
+        const vehicle = vehiclesById.get(trip.vehicleId);
+
+        const templateCtx = {
+          vehicleNickname: vehicle?.nickname ?? trip.vehicleId,
+          externalTripId: trip.externalTripId,
+          pickupAt: trip.pickupAt,
+          returnAt: trip.returnAt,
+          pickupLocation: trip.pickupLocation,
+          guestFirstName: guest?.firstName ?? guest?.fullName?.split(" ")[0] ?? "there",
+        };
+
+        // Pre-trip reminder: upcoming trips with pickup within the window
+        if (
+          trip.status === "upcoming" &&
+          pickupMs > asOfMs &&
+          pickupMs - asOfMs <= preTripWindowMs &&
+          !existingDraftKeys.has(`${trip.id}:pretrip_reminder`)
+        ) {
+          let thread = threadByTripId.get(trip.id);
+          if (!thread) {
+            thread = {
+              id: stableId(["thread", trip.id]),
+              tripId: trip.id,
+              guestId: trip.guestId,
+              channel: "turo",
+              status: "drafting",
+              lastMessageAt: input.asOf,
+              ownerId: input.requestedBy,
+              createdAt: input.asOf,
+              updatedAt: input.asOf,
+            };
+            newThreads.push(thread);
+            threadByTripId.set(trip.id, thread);
+          }
+
+          newDrafts.push({
+            id: stableId(["draft", trip.id, "pretrip_reminder", input.asOf]),
+            threadId: thread.id,
+            tripId: trip.id,
+            direction: "outbound",
+            channel: "turo",
+            body: renderMessageTemplate({ ...templateCtx, templateKey: "pretrip_reminder" }),
+            templateKey: "pretrip_reminder",
+            approvalStatus: "pending",
+            state: "awaiting_approval",
+            requestedBy: input.requestedBy,
+            createdAt: input.asOf,
+            updatedAt: input.asOf,
+          });
+        } else if (
+          trip.status === "upcoming" &&
+          pickupMs > asOfMs &&
+          pickupMs - asOfMs <= preTripWindowMs
+        ) {
+          skippedCount++;
+        }
+
+        // Return reminder: active trips with return within the window
+        if (
+          trip.status === "active" &&
+          returnMs > asOfMs &&
+          returnMs - asOfMs <= returnWindowMs &&
+          !existingDraftKeys.has(`${trip.id}:return_reminder`)
+        ) {
+          let thread = threadByTripId.get(trip.id);
+          if (!thread) {
+            thread = {
+              id: stableId(["thread", trip.id]),
+              tripId: trip.id,
+              guestId: trip.guestId,
+              channel: "turo",
+              status: "drafting",
+              lastMessageAt: input.asOf,
+              ownerId: input.requestedBy,
+              createdAt: input.asOf,
+              updatedAt: input.asOf,
+            };
+            newThreads.push(thread);
+            threadByTripId.set(trip.id, thread);
+          }
+
+          newDrafts.push({
+            id: stableId(["draft", trip.id, "return_reminder", input.asOf]),
+            threadId: thread.id,
+            tripId: trip.id,
+            direction: "outbound",
+            channel: "turo",
+            body: renderMessageTemplate({ ...templateCtx, templateKey: "return_reminder" }),
+            templateKey: "return_reminder",
+            approvalStatus: "pending",
+            state: "awaiting_approval",
+            requestedBy: input.requestedBy,
+            createdAt: input.asOf,
+            updatedAt: input.asOf,
+          });
+        } else if (
+          trip.status === "active" &&
+          returnMs > asOfMs &&
+          returnMs - asOfMs <= returnWindowMs
+        ) {
+          skippedCount++;
+        }
+      }
+
+      if (newThreads.length > 0) {
+        await deps.messageRepository.saveThreads(newThreads);
+      }
+
+      if (newDrafts.length > 0) {
+        await deps.messageRepository.saveDrafts(newDrafts);
+        // Notify for each new draft
+        await Promise.all(
+          newDrafts.map((draft) =>
+            deps.notifier.notifyApprovalRequested({
+              approvalRequestId: stableId(["approval", draft.id]),
+              draftId: draft.id,
+              tripId: draft.tripId,
+            }).catch(() => {}),
+          ),
+        );
+      }
+
+      const issues: UseCaseIssue[] =
+        newDrafts.length === 0
+          ? [
+              {
+                code: "NO_DRAFTS_GENERATED",
+                message: "No new message drafts were generated for the current trip window.",
+                severity: "info" as const,
+              },
+            ]
+          : [];
+
+      return makeResult({ createdDrafts: newDrafts, skippedCount }, issues, input.asOf);
     },
   };
 }

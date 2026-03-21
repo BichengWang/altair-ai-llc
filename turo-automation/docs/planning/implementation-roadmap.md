@@ -35,11 +35,11 @@ PR slices:
 4. approval state transitions via UI actions ✓
 5. templated pre-trip and return reminder drafts
 
-## Phase 3 — Automation Engine
+## Phase 3 — Automation Engine (item 1 complete)
 Objective: reduce repetitive manual work with safe background jobs.
 
 PR slices:
-1. scheduled worker framework (cron / queue)
+1. scheduled worker framework (`WORKER_MODE=scheduled`, interval-based) ✓
 2. trip lifecycle task generation from real trips
 3. late return detection with real Slack alerts
 4. daily ops digest to Slack
@@ -55,15 +55,19 @@ PR slices:
 4. richer analytics and utilization reporting
 
 ## Current Highest-Priority Next PR
-Implement templated message bodies for pre-trip and return reminder drafts:
-- extend `createCreateMessageDraftUseCase` to accept guest/vehicle context and render real message bodies from a template key
-- support at least `pretrip_reminder` and `return_reminder` keys
-- add contract test verifying rendered body contains guest name and vehicle nickname
+Add a `generate_drafts` worker job that automatically creates pre-trip and
+return-reminder message drafts for upcoming/active trips that don't yet have
+an outbound draft:
+- new use case `createGenerateMessageDraftsUseCase` in shared application
+- scans trips for upcoming pickup (within 24h) and active return (within 24h)
+- creates `pretrip_reminder` and `return_reminder` drafts with real template bodies
+- add to scheduled worker as `generate_drafts` job (interval: 30 min)
+- add contract test
 
 ## Why This Is Next
-- Phase 2 items 1–4 are all complete
-- The draft-creation use-case currently writes placeholder text (`Draft for {templateKey} on trip {externalTripId}`)
-- Real template rendering is required before the messaging workflow is operationally useful
+- Phase 2 is fully complete; Phase 3 item 1 (scheduler) is done
+- The messaging workflow has real templates but no automatic draft generation
+- Automatic draft creation is the next step toward autonomous-but-approved messaging
 
 ## Rules for Future PRs
 - one highest-priority PR at a time

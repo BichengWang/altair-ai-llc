@@ -8,9 +8,11 @@ import {
   createDetectLateReturnsUseCase,
   createFixtureContext,
   createGenerateLifecycleTasksUseCase,
+  createGenerateMessageDraftsUseCase,
   createGetTodayOpsSnapshotUseCase,
   createImportTripsUseCase,
   createInMemoryGuestRepository,
+  createInMemoryIncidentRepository,
   createInMemoryMessageRepository,
   createInMemoryTripRepository,
   createInMemoryVehicleRepository,
@@ -271,4 +273,100 @@ test("CreateMessageDraft renders templated body when guests and vehicles provide
   assert.ok(result.data.draft.body.includes("Alex"), "draft body includes guest name");
   assert.ok(result.data.draft.body.includes("Polestar 2"), "draft body includes vehicle");
   assert.ok(result.data.draft.body.includes("TU-1001"), "draft body includes trip ID");
+});
+
+test("GenerateMessageDrafts creates pretrip and return reminder drafts within window", async () => {
+  // Set asOf to 18h before TU-1001 pickup so it's within 24h pre-trip window
+  // TU-1001 pickup: 2026-03-20T20:00:00Z → asOf must be < 20:00 but > 20:00 - 24h = 2026-03-19T20:00Z
+  // Use 2 hours before pickup: 2026-03-20T18:00:00Z (= FIXTURE_NOW)
+  const asOf = FIXTURE_NOW; // 2026-03-20T18:00Z — 2h before TU-1001 pickup at 20:00Z
+
+  const notifier = {
+    async publishDigest() { return { accepted: false, externalId: null }; },
+    async notifyApprovalRequested() { return { accepted: false, externalId: null }; },
+    async notifyIncidentDetected() { return { accepted: false, externalId: null }; },
+  };
+
+  const tripRepository = createInMemoryTripRepository({
+    trips: [
+      // upcoming trip with pickup in 2h (within 24h window)
+      {
+        id: "trip-upcoming",
+        externalTripId: "TU-UP",
+        vehicleId: "v1",
+        guestId: "g1",
+        status: "upcoming",
+        pickupAt: "2026-03-20T20:00:00.000Z",
+        returnAt: "2026-03-22T20:00:00.000Z",
+        actualReturnAt: null,
+        pickupLocation: "LAX",
+        returnLocation: "LAX",
+        tripTotalAmount: 200,
+        deliveryRequired: false,
+        source: "test",
+        notes: null,
+        createdAt: asOf,
+        updatedAt: asOf,
+      },
+      // active trip with return in 3h (within 24h window)
+      {
+        id: "trip-active",
+        externalTripId: "TU-ACT",
+        vehicleId: "v2",
+        guestId: "g2",
+        status: "active",
+        pickupAt: "2026-03-18T10:00:00.000Z",
+        returnAt: "2026-03-20T21:00:00.000Z",
+        actualReturnAt: null,
+        pickupLocation: "Santa Monica",
+        returnLocation: "Santa Monica",
+        tripTotalAmount: 150,
+        deliveryRequired: false,
+        source: "test",
+        notes: null,
+        createdAt: asOf,
+        updatedAt: asOf,
+      },
+    ],
+    tripEvents: [],
+  });
+  const messageRepository = createInMemoryMessageRepository({
+    threads: [],
+    drafts: [],
+    approvalRequests: [],
+  });
+  const guests = [
+    { id: "g1", fullName: "Alex Lee" },
+    { id: "g2", fullName: "Maya Patel" },
+  ];
+  const vehicles = [
+    { id: "v1", vin: null, plate: null, nickname: "Polestar 2", make: "Polestar", model: "2", year: 2024, status: "active", location: null, odometer: null, fuelType: null, notes: null, createdAt: asOf, updatedAt: asOf },
+    { id: "v2", vin: null, plate: null, nickname: "Model Y", make: "Tesla", model: "Model Y", year: 2023, status: "active", location: null, odometer: null, fuelType: null, notes: null, createdAt: asOf, updatedAt: asOf },
+  ];
+
+  const useCase = createGenerateMessageDraftsUseCase({
+    tripRepository,
+    messageRepository,
+    notifier,
+    guests,
+    vehicles,
+  });
+
+  const result = await useCase.execute({ asOf, requestedBy: "test-runner" });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.data.createdDrafts.length, 2);
+
+  const keys = result.data.createdDrafts.map((d) => d.templateKey).sort();
+  assert.deepEqual(keys, ["pretrip_reminder", "return_reminder"]);
+
+  // Pretrip body should mention the guest and vehicle
+  const preTripDraft = result.data.createdDrafts.find((d) => d.templateKey === "pretrip_reminder");
+  assert.ok(preTripDraft?.body.includes("Alex"), "pretrip body mentions guest");
+  assert.ok(preTripDraft?.body.includes("Polestar 2"), "pretrip body mentions vehicle");
+
+  // Running again should skip both trips (already have drafts for both)
+  const result2 = await useCase.execute({ asOf, requestedBy: "test-runner" });
+  assert.equal(result2.data.createdDrafts.length, 0);
+  assert.equal(result2.data.skippedCount, 2); // both trips are still in window but drafts already exist
 });
