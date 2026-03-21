@@ -1,18 +1,16 @@
 import { readBrowserAgentConfig } from '../config.js';
+import { exists } from '../fs.js';
 import { createResult } from '../results.js';
+import type { SessionCheckData } from '../types.js';
 
 export async function runSessionCheck() {
   const config = readBrowserAgentConfig();
-  return createResult('session:check', {
+  const stateFileExists = await exists(config.storageStatePath);
+
+  return createResult<SessionCheckData>('session:check', {
     implemented: false,
-    checks: [
-      'load storage state',
-      'open dashboard or trips page',
-      'detect authenticated vs expired session',
-    ],
-    config: {
-      baseUrl: config.baseUrl,
-      storageStatePath: config.storageStatePath,
-    },
-  });
+    stateFileExists,
+    status: stateFileExists ? 'ready_for_browser_check' : 'missing_state',
+    storageStatePath: config.storageStatePath,
+  }, stateFileExists ? undefined : ['No storage state found; run session:bootstrap first.']);
 }
