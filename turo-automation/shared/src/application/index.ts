@@ -254,6 +254,32 @@ export interface GenerateMessageDraftsUseCase {
   ): Promise<UseCaseResult<GenerateMessageDraftsData>>;
 }
 
+export type TimelineEventKind = "trip_event" | "task" | "incident" | "draft";
+
+export interface TripTimelineEntry {
+  kind: TimelineEventKind;
+  id: string;
+  timestamp: ISODateString;
+  label: string;
+  detail: string | null;
+}
+
+export interface GetTripTimelineInput {
+  tripId: string;
+  generatedAt: ISODateString;
+}
+
+export interface GetTripTimelineData {
+  tripId: string;
+  entries: TripTimelineEntry[];
+}
+
+export interface GetTripTimelineUseCase {
+  execute(
+    input: GetTripTimelineInput,
+  ): Promise<UseCaseResult<GetTripTimelineData>>;
+}
+
 function cloneValue<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;
 }
@@ -812,6 +838,87 @@ export function createDetectTripAnomaliesUseCase(deps: {
         },
         useCaseIssues,
         input.asOf,
+      );
+    },
+  };
+}
+
+export function createGetTripTimelineUseCase(deps: {
+  tripRepository: TripRepository;
+  taskRepository: TaskRepository;
+  incidentRepository: IncidentRepository;
+  messageRepository: MessageRepository;
+}): GetTripTimelineUseCase {
+  return {
+    async execute(input) {
+      const [tripEvents, tasks, incidents, drafts] = await Promise.all([
+        deps.tripRepository.listTripEvents(),
+        deps.taskRepository.listTasks(),
+        deps.incidentRepository.listIncidents(),
+        deps.messageRepository.listDrafts(),
+      ]);
+
+      const entries: TripTimelineEntry[] = [];
+
+      for (const event of tripEvents.filter((e) => e.tripId === input.tripId)) {
+        entries.push({
+          kind: "trip_event",
+          id: event.id,
+          timestamp: event.eventTime,
+          label: event.eventType.replace(/_/g, " "),
+          detail: event.source,
+        });
+      }
+
+      for (const task of tasks.filter((t) => t.tripId === input.tripId)) {
+        entries.push({
+          kind: "task",
+          id: task.id,
+          timestamp: task.dueAt ?? task.createdAt,
+          label: task.title,
+          detail: task.status,
+        });
+      }
+
+      for (const incident of incidents.filter((i) => i.tripId === input.tripId)) {
+        entries.push({
+          kind: "incident",
+          id: incident.id,
+          timestamp: incident.openedAt,
+          label: incident.summary,
+          detail: incident.status,
+        });
+      }
+
+      for (const draft of drafts.filter((d) => d.tripId === input.tripId)) {
+        entries.push({
+          kind: "draft",
+          id: draft.id,
+          timestamp: draft.createdAt,
+          label: `Draft: ${draft.templateKey}`,
+          detail: draft.state,
+        });
+      }
+
+      entries.sort((a, b) => a.timestamp.localeCompare(b.timestamp));
+
+      const issues: UseCaseIssue[] =
+        entries.length === 0
+          ? [
+              {
+                code: "NO_TIMELINE_ENTRIES",
+                message: `No timeline entries found for trip ${input.tripId}.`,
+                severity: "info" as const,
+                entityType: "trip",
+                entityId: input.tripId,
+              },
+            ]
+          : [];
+
+      return makeResult(
+        { tripId: input.tripId, entries },
+        issues,
+        input.generatedAt,
       );
     },
   };

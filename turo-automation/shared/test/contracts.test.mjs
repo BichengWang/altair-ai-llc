@@ -11,10 +11,12 @@ import {
   createGenerateLifecycleTasksUseCase,
   createGenerateMessageDraftsUseCase,
   createGetTodayOpsSnapshotUseCase,
+  createGetTripTimelineUseCase,
   createImportTripsUseCase,
   createInMemoryGuestRepository,
   createInMemoryIncidentRepository,
   createInMemoryMessageRepository,
+  createInMemoryTaskRepository,
   createInMemoryTripRepository,
   createInMemoryVehicleRepository,
   renderMessageTemplate,
@@ -442,4 +444,127 @@ test("DetectTripAnomalies creates late return AND trip issue incidents", async (
 
   const types = result.data.incidentsCreated.map((i) => i.type).sort();
   assert.deepEqual(types, ["late_return", "other"]);
+});
+
+test("GetTripTimeline returns sorted entries from events, tasks, incidents, and drafts", async () => {
+  const tripId = "trip-tu-1001";
+  const tripRepository = createInMemoryTripRepository({
+    trips: [
+      {
+        id: tripId,
+        externalTripId: "TU-1001",
+        vehicleId: "v1",
+        guestId: "g1",
+        status: "upcoming",
+        pickupAt: "2026-03-20T20:00:00.000Z",
+        returnAt: "2026-03-22T20:00:00.000Z",
+        actualReturnAt: null,
+        pickupLocation: "LAX",
+        returnLocation: "LAX",
+        tripTotalAmount: 200,
+        deliveryRequired: false,
+        source: "test",
+        notes: null,
+        createdAt: FIXTURE_NOW,
+        updatedAt: FIXTURE_NOW,
+      },
+    ],
+    tripEvents: [
+      {
+        id: "event-1",
+        tripId,
+        eventType: "trip_imported",
+        eventTime: "2026-03-19T10:00:00.000Z",
+        source: "csv",
+        payload: {},
+        createdAt: FIXTURE_NOW,
+      },
+    ],
+  });
+
+  const taskRepository = createInMemoryTaskRepository({
+    tasks: [
+      {
+        id: "task-1",
+        tripId,
+        vehicleId: "v1",
+        type: "prep",
+        title: "Prep vehicle",
+        description: null,
+        status: "todo",
+        priority: "high",
+        assignedTo: null,
+        dueAt: "2026-03-20T18:00:00.000Z",
+        completedAt: null,
+        createdBy: "test",
+        createdAt: FIXTURE_NOW,
+        updatedAt: FIXTURE_NOW,
+      },
+    ],
+  });
+
+  const incidentRepository = createInMemoryIncidentRepository({
+    incidents: [
+      {
+        id: "incident-1",
+        tripId,
+        vehicleId: "v1",
+        type: "mechanical",
+        severity: "medium",
+        status: "open",
+        summary: "Warning light",
+        details: null,
+        ownerId: null,
+        openedAt: "2026-03-20T15:00:00.000Z",
+        resolvedAt: null,
+        createdAt: FIXTURE_NOW,
+        updatedAt: FIXTURE_NOW,
+      },
+    ],
+  });
+
+  const messageRepository = createInMemoryMessageRepository({
+    threads: [],
+    drafts: [
+      {
+        id: "draft-1",
+        threadId: "thread-1",
+        tripId,
+        direction: "outbound",
+        channel: "turo",
+        body: "Hi Alex!",
+        templateKey: "pretrip_reminder",
+        approvalStatus: "pending",
+        state: "awaiting_approval",
+        requestedBy: "ops",
+        createdAt: "2026-03-20T16:00:00.000Z",
+        updatedAt: FIXTURE_NOW,
+      },
+    ],
+    approvalRequests: [],
+  });
+
+  const useCase = createGetTripTimelineUseCase({
+    tripRepository,
+    taskRepository,
+    incidentRepository,
+    messageRepository,
+  });
+
+  const result = await useCase.execute({ tripId, generatedAt: FIXTURE_NOW });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.data.tripId, tripId);
+  assert.equal(result.data.entries.length, 4); // event + task + incident + draft
+
+  // Should be sorted by timestamp ascending
+  const timestamps = result.data.entries.map((e) => e.timestamp);
+  const sorted = [...timestamps].sort();
+  assert.deepEqual(timestamps, sorted, "entries should be sorted by timestamp");
+
+  const kinds = result.data.entries.map((e) => e.kind);
+  assert.ok(kinds.includes("trip_event"), "should include trip_event");
+  assert.ok(kinds.includes("task"), "should include task");
+  assert.ok(kinds.includes("incident"), "should include incident");
+  assert.ok(kinds.includes("draft"), "should include draft");
 });
