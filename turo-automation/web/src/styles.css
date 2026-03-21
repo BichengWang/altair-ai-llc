@@ -384,3 +384,38 @@ h1 {
     text-align: left;
   }
 }
+
+/* Vehicle utilization panel */
+.util-row {
+  align-items: center;
+}
+
+.util-bar-wrap {
+  min-width: 140px;
+  max-width: 160px;
+}
+
+.util-bar-track {
+  position: relative;
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(17, 34, 49, 0.09);
+}
+
+.util-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: #143247;
+  min-width: 2px;
+  transition: width 0.3s ease;
+}
+
+.util-bar-label {
+  display: block;
+  margin-top: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #42515f;
+  letter-spacing: 0.04em;
+  text-align: right;
+}
