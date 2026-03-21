@@ -81,3 +81,43 @@ Chronological notes on repo setup, architecture decisions, implementation progre
 - Add worker job framework for scheduled automation
 - Connect shared domain models to persistence and UI
 - Add incident and messaging schema slices
+
+---
+
+## 2026-03-20
+
+### Interface-first architecture PR
+- Re-architected `turo-automation` around explicit package boundaries while keeping the existing `web`, `worker`, and `shared` package topology
+- Added shared modules for:
+  - domain entities and status unions
+  - repository and integration ports
+  - typed use-case contracts and result envelopes
+  - fixture-backed in-memory repositories and adapters
+- Added a canonical `TodayOpsSnapshot` read model to serve as the first dashboard contract
+- Added use cases for:
+  - today ops snapshot
+  - trip import
+  - lifecycle task generation
+  - message draft creation
+  - approval request
+  - late return detection
+  - daily digest creation
+
+### Web shell refactor
+- Replaced the placeholder milestone card with a fixture-backed dashboard shell
+- Moved UI composition into `web/src/app`, `web/src/features`, `web/src/ui`, and `web/src/lib`
+- Kept the web package consuming only `@turo-automation/shared` exports
+
+### Worker bootstrap refactor
+- Replaced the placeholder worker log output with fixture-backed job execution
+- Added worker bootstrap, job modules, adapter assembly, logger, and clock helpers
+- Kept the worker package consuming only `@turo-automation/shared` exports
+
+### Verification
+- `npm run build`
+- `npm test`
+
+### Next
+- Implement real Supabase-backed repository adapters
+- Add missing persistence slices for incidents, messages, approvals, and job runs
+- Replace fixture context in the web app and worker with persistence-backed adapters

@@ -53,15 +53,15 @@ PR slices:
 4. richer analytics and utilization reporting
 
 ## Current Highest-Priority Next PR
-Initialize the actual application skeletons under:
-- `turo-automation/web/`
-- `turo-automation/worker/`
-- `turo-automation/shared/`
+Wire the new shared contracts to real persistence and notification adapters:
+- Supabase-backed trip, task, incident, message, and job-run repositories
+- worker adapter replacements for fixture ingestion and notification
+- dashboard reads backed by repository data instead of fixture context
 
 ## Why This Is Next
-- the docs foundation now exists
-- the next bottleneck is lack of executable app structure
-- creating the app skeleton enables schema work and UI/worker slices to proceed in parallel
+- the interface-first package boundaries now exist and compile
+- the next bottleneck is that all reads and jobs are still fixture-backed
+- adapter wiring can now proceed without changing the public shared contracts
 
 ## Rules for Future PRs
 - one highest-priority PR at a time
