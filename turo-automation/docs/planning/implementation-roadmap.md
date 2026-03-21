@@ -35,7 +35,7 @@ PR slices:
 4. approval state transitions via UI actions ✓
 5. templated pre-trip and return reminder drafts ✓
 
-## Phase 3 — Automation Engine (items 1–4 complete)
+## Phase 3 — Automation Engine ✓
 Objective: reduce repetitive manual work with safe background jobs.
 
 PR slices:
@@ -44,27 +44,35 @@ PR slices:
 3. late return detection with real Slack alerts ✓ (DetectLateReturns + Slack notifier)
 4. daily ops digest to Slack ✓ (BuildDailyDigest + scheduled)
 5. auto-generate pre-trip and return reminder drafts ✓ (GenerateMessageDrafts use case)
-6. incident creation from predefined triggers
+6. incident creation from predefined triggers ✓ (DetectTripAnomalies: late returns + issue-status trips)
 
-## Phase 4 — Reliability + Extensions (items 1–2 complete)
+## Phase 4 — Reliability + Extensions ✓
 Objective: improve correctness, visibility, and operator trust.
 
 PR slices:
 1. audit log / event timeline improvements ✓ (`GetTripTimeline` use case)
 2. retry + failure handling for worker jobs ✓ (`withRetry` wrapper in scheduler)
-3. operational runbooks and alert tuning
-4. richer analytics and utilization reporting
+3. operational runbooks and alert tuning ✓ (`host-ops-daily.md`, `incident-response.md`)
+4. richer analytics and utilization reporting ✓ (`GetVehicleUtilization` use case)
+
+## Phase 5 — Dashboard Enrichment (next)
+Objective: surface the new data from Phases 3–4 in the operator UI.
+
+PR slices:
+1. trip timeline panel in OpsDashboard (wire `GetTripTimeline` to selected-trip view)
+2. vehicle utilization panel (wire `GetVehicleUtilization` to dashboard sidebar)
+3. incident list panel with status transitions (surface `DetectTripAnomalies` output)
 
 ## Current Highest-Priority Next PR
-Phase 4 item 3: operational runbooks and alert tuning:
-- document host-ops daily workflow in `docs/runbooks/host-ops-daily.md`
-- document incident response steps in `docs/runbooks/incident-response.md`
-- add threshold guidance (late return window, approval SLA, overdue task escalation)
+Phase 5 item 1: trip timeline panel in OpsDashboard:
+- Add a trip-detail side panel that calls `GetTripTimeline` for the selected trip
+- Render timeline entries (events, tasks, incidents, drafts) sorted by timestamp
+- Wire to existing fixture data for immediate local testing
 
 ## Why This Is Next
-- Phases 0–4 items 1–2 are complete
-- Runbooks help operators use the system effectively without relying on code exploration
-- Alert tuning guidance prevents noise from the automated notifications
+- Phases 0–4 are fully complete
+- The operator UI still only shows the snapshot view; no drill-down exists
+- Trip timeline is the single highest-value addition: surfaces all context in one place
 
 ## Rules for Future PRs
 - one highest-priority PR at a time

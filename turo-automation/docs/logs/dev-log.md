@@ -307,3 +307,23 @@ Chronological notes on repo setup, architecture decisions, implementation progre
   - Contract test verifies all 4 entry kinds and sort order
 
 **Verification**: `npm test` — 22/22 pass
+
+### GetVehicleUtilization use case (Iter 34)
+
+- Added `VehicleUtilizationItem` type and `GetVehicleUtilizationUseCase` to `shared/src/application/index.ts`:
+  - Accepts an array of trips and a date range; computes per-vehicle utilization rate
+  - Utilization = booked days / total days in range (capped at 1.0)
+  - Contract test verifies correct rate calculation and zero-rate for unboked vehicles
+- Added contract test in `shared/test/contracts.test.mjs`
+
+**Verification**: `npm test` — 23/23 pass
+
+### Roadmap update (Iter 35)
+
+- Marked Phase 3 and Phase 4 fully complete in `docs/planning/implementation-roadmap.md`
+- Added Phase 5 — Dashboard Enrichment with 3 planned PR slices:
+  1. Trip timeline panel (wire `GetTripTimeline` to selected-trip view)
+  2. Vehicle utilization panel (wire `GetVehicleUtilization` to sidebar)
+  3. Incident list panel with status transitions
+- Current highest-priority: Phase 5 item 1 (trip timeline panel)
+
