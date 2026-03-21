@@ -1,4 +1,5 @@
 import {
+  createEnvSlackNotifier,
   createSupabaseClient,
   createSupabaseIncidentRepository,
   createSupabaseJobRunRepository,
@@ -6,7 +7,6 @@ import {
   createSupabaseTaskRepository,
   createSupabaseTripRepository,
   type Guest,
-  type OpsNotifier,
   type TripImportSource,
   type Vehicle,
 } from "@turo-automation/shared";
@@ -37,23 +37,8 @@ interface GuestRow {
 }
 
 // ---------------------------------------------------------------------------
-// Stub implementations for adapters not yet wired to real services.
-// These are replaced by real integrations in future slices.
+// Stub: trip import source (CSV / Turo export adapter planned in next slice)
 // ---------------------------------------------------------------------------
-function createNoopNotifier(): OpsNotifier {
-  return {
-    async publishDigest() {
-      return { accepted: false, externalId: null };
-    },
-    async notifyApprovalRequested() {
-      return { accepted: false, externalId: null };
-    },
-    async notifyIncidentDetected() {
-      return { accepted: false, externalId: null };
-    },
-  };
-}
-
 function createNoopTripImportSource(): TripImportSource {
   return {
     async readTripImportRows() {
@@ -75,10 +60,14 @@ export async function createSupabaseAdapters() {
   ]);
 
   if (vehiclesRes.error) {
-    throw new Error(`createSupabaseAdapters: vehicles – ${vehiclesRes.error.message}`);
+    throw new Error(
+      `createSupabaseAdapters: vehicles – ${vehiclesRes.error.message}`
+    );
   }
   if (guestsRes.error) {
-    throw new Error(`createSupabaseAdapters: guests – ${guestsRes.error.message}`);
+    throw new Error(
+      `createSupabaseAdapters: guests – ${guestsRes.error.message}`
+    );
   }
 
   const vehicles: Vehicle[] = (vehiclesRes.data as VehicleRow[]).map((r) => ({
@@ -110,8 +99,9 @@ export async function createSupabaseAdapters() {
     incidentRepository: createSupabaseIncidentRepository(client),
     messageRepository: createSupabaseMessageRepository(client),
     jobRunRepository: createSupabaseJobRunRepository(client),
-    // Real implementations planned in upcoming slices
+    // Real Slack notifier — no-op when SLACK_WEBHOOK_URL is absent
+    notifier: createEnvSlackNotifier(),
+    // Trip import source — noop stub (CSV adapter planned in next slice)
     tripImportSource: createNoopTripImportSource(),
-    notifier: createNoopNotifier(),
   };
 }
