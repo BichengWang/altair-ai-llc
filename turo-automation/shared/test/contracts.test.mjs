@@ -4,14 +4,17 @@ import {
   FIXTURE_NOW,
   FIXTURE_TODAY,
   createActOnApprovalUseCase,
+  createCreateMessageDraftUseCase,
   createDetectLateReturnsUseCase,
   createFixtureContext,
   createGenerateLifecycleTasksUseCase,
   createGetTodayOpsSnapshotUseCase,
   createImportTripsUseCase,
   createInMemoryGuestRepository,
+  createInMemoryMessageRepository,
   createInMemoryTripRepository,
   createInMemoryVehicleRepository,
+  renderMessageTemplate,
 } from "../dist/index.js";
 
 test("GetTodayOpsSnapshot returns the typed fixture snapshot", async () => {
@@ -166,4 +169,106 @@ test("ActOnApproval transitions a pending approval to approved and updates draft
   assert.equal(result.data.approvalRequest.reviewedBy, "test.reviewer");
   assert.equal(result.data.draft.approvalStatus, "approved");
   assert.equal(result.data.draft.state, "ready_for_review");
+});
+
+test("renderMessageTemplate pretrip_reminder contains guest name and vehicle", () => {
+  const body = renderMessageTemplate({
+    templateKey: "pretrip_reminder",
+    guestFirstName: "Alex",
+    vehicleNickname: "Polestar 2",
+    externalTripId: "TU-1001",
+    pickupAt: "2026-03-20T20:00:00.000Z",
+    returnAt: "2026-03-22T17:00:00.000Z",
+    pickupLocation: "LAX",
+  });
+
+  assert.ok(body.includes("Alex"), "body should include guest first name");
+  assert.ok(body.includes("Polestar 2"), "body should include vehicle nickname");
+  assert.ok(body.includes("TU-1001"), "body should include trip ID");
+  assert.ok(body.includes("2026-03-20"), "body should include pickup date");
+});
+
+test("renderMessageTemplate return_reminder contains vehicle and return date", () => {
+  const body = renderMessageTemplate({
+    templateKey: "return_reminder",
+    guestFirstName: "Maya",
+    vehicleNickname: "Model Y",
+    externalTripId: "TU-1002",
+    pickupAt: "2026-03-18T17:00:00.000Z",
+    returnAt: "2026-03-20T16:30:00.000Z",
+    pickupLocation: "Santa Monica",
+  });
+
+  assert.ok(body.includes("Maya"), "body should include guest first name");
+  assert.ok(body.includes("Model Y"), "body should include vehicle nickname");
+  assert.ok(body.includes("2026-03-20"), "body should include return date");
+});
+
+test("CreateMessageDraft renders templated body when guests and vehicles provided", async () => {
+  const tripRepository = createInMemoryTripRepository({
+    trips: [
+      {
+        id: "trip-tu-1001",
+        externalTripId: "TU-1001",
+        vehicleId: "vehicle-polestar-2",
+        guestId: "guest-alex-lee",
+        status: "upcoming",
+        pickupAt: "2026-03-20T20:00:00.000Z",
+        returnAt: "2026-03-22T17:00:00.000Z",
+        actualReturnAt: null,
+        pickupLocation: "LAX",
+        returnLocation: "LAX",
+        tripTotalAmount: 286,
+        deliveryRequired: true,
+        source: "test",
+        notes: null,
+        createdAt: FIXTURE_NOW,
+        updatedAt: FIXTURE_NOW,
+      },
+    ],
+    tripEvents: [],
+  });
+  const messageRepository = createInMemoryMessageRepository({
+    threads: [],
+    drafts: [],
+    approvalRequests: [],
+  });
+  const guests = [{ id: "guest-alex-lee", firstName: "Alex", fullName: "Alex Lee" }];
+  const vehicles = [
+    {
+      id: "vehicle-polestar-2",
+      vin: null,
+      plate: "9ABC123",
+      nickname: "Polestar 2",
+      make: "Polestar",
+      model: "2",
+      year: 2024,
+      status: "active",
+      location: "LAX",
+      odometer: null,
+      fuelType: "electric",
+      notes: null,
+      createdAt: FIXTURE_NOW,
+      updatedAt: FIXTURE_NOW,
+    },
+  ];
+
+  const useCase = createCreateMessageDraftUseCase({
+    tripRepository,
+    messageRepository,
+    guests,
+    vehicles,
+  });
+
+  const result = await useCase.execute({
+    tripId: "trip-tu-1001",
+    templateKey: "pretrip_reminder",
+    requestedBy: "test-runner",
+    createdAt: FIXTURE_NOW,
+  });
+
+  assert.equal(result.ok, true);
+  assert.ok(result.data.draft.body.includes("Alex"), "draft body includes guest name");
+  assert.ok(result.data.draft.body.includes("Polestar 2"), "draft body includes vehicle");
+  assert.ok(result.data.draft.body.includes("TU-1001"), "draft body includes trip ID");
 });

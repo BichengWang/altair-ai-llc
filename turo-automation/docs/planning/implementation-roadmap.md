@@ -25,14 +25,14 @@ PR slices:
 6. add Supabase-backed repository adapters in `shared/src/adapters/supabase/` ✓
 7. wire worker + web to Supabase adapters (env-gated, fixture fallback) ✓
 
-## Phase 2 — Real Notifications + Import
+## Phase 2 — Real Notifications + Import ✓ (items 1–4 complete)
 Objective: connect the system to real external services.
 
 PR slices:
-1. Slack notifier adapter (`SLACK_WEBHOOK_URL` env var)
-2. trip import-source adapter (CSV / Turo export)
-3. `.env.example` with required environment variable documentation
-4. approval state transitions via UI actions
+1. Slack notifier adapter (`SLACK_WEBHOOK_URL` env var) ✓
+2. trip import-source adapter (CSV / Turo export) ✓
+3. `.env.example` with required environment variable documentation ✓
+4. approval state transitions via UI actions ✓
 5. templated pre-trip and return reminder drafts
 
 ## Phase 3 — Automation Engine
@@ -55,15 +55,15 @@ PR slices:
 4. richer analytics and utilization reporting
 
 ## Current Highest-Priority Next PR
-Wire the Slack notifier adapter so that approval requests and daily digests reach the ops channel:
-- add `shared/src/adapters/slack/notifier.ts` implementing `OpsNotifier` via incoming webhook
-- gate on `SLACK_WEBHOOK_URL` env var; noop if absent
-- replace `createNoopNotifier()` in `worker/src/adapters/createSupabaseAdapters.ts`
+Implement templated message bodies for pre-trip and return reminder drafts:
+- extend `createCreateMessageDraftUseCase` to accept guest/vehicle context and render real message bodies from a template key
+- support at least `pretrip_reminder` and `return_reminder` keys
+- add contract test verifying rendered body contains guest name and vehicle nickname
 
 ## Why This Is Next
-- the Supabase repository adapters now exist and the build/tests pass
-- the notifier is the last stub in the worker's real-data path
-- once notifications fire, the daily digest and approval workflow are operationally useful
+- Phase 2 items 1–4 are all complete
+- The draft-creation use-case currently writes placeholder text (`Draft for {templateKey} on trip {externalTripId}`)
+- Real template rendering is required before the messaging workflow is operationally useful
 
 ## Rules for Future PRs
 - one highest-priority PR at a time

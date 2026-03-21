@@ -294,6 +294,53 @@ function buildTripLabel(
   };
 }
 
+export interface MessageTemplateContext {
+  templateKey: string;
+  guestFirstName: string;
+  vehicleNickname: string;
+  externalTripId: string;
+  pickupAt: ISODateString;
+  returnAt: ISODateString;
+  pickupLocation: string;
+}
+
+export function renderMessageTemplate(ctx: MessageTemplateContext): string {
+  const pickupDate = ctx.pickupAt.slice(0, 10);
+  const returnDate = ctx.returnAt.slice(0, 10);
+
+  switch (ctx.templateKey) {
+    case "pretrip_reminder":
+      return [
+        `Hi ${ctx.guestFirstName}! This is a quick reminder that your Turo trip (${ctx.externalTripId}) is coming up.`,
+        ``,
+        `Vehicle: ${ctx.vehicleNickname}`,
+        `Pickup: ${pickupDate} at ${ctx.pickupLocation}`,
+        `Return: ${returnDate}`,
+        ``,
+        `Please review the trip details and let us know if you have any questions. Drive safe!`,
+      ].join("\n");
+
+    case "return_reminder":
+      return [
+        `Hi ${ctx.guestFirstName}! Just a reminder that your ${ctx.vehicleNickname} (trip ${ctx.externalTripId}) is due back on ${returnDate}.`,
+        ``,
+        `Return location: ${ctx.pickupLocation}`,
+        ``,
+        `Please ensure the vehicle is returned on time and in good condition. Thank you!`,
+      ].join("\n");
+
+    case "incident_notice":
+      return [
+        `Hi ${ctx.guestFirstName}, we wanted to follow up regarding your recent trip (${ctx.externalTripId}) with ${ctx.vehicleNickname}.`,
+        ``,
+        `Our team will be in touch to discuss the details. Please respond to this message or call us if you have questions.`,
+      ].join("\n");
+
+    default:
+      return `[${ctx.templateKey}] Trip ${ctx.externalTripId} — ${ctx.vehicleNickname} — ${ctx.guestFirstName}`;
+  }
+}
+
 function buildDigestText(snapshot: TodayOpsSnapshot): string {
   return [
     `Turo ops digest for ${snapshot.generatedAt.slice(0, 10)}`,
@@ -818,6 +865,10 @@ export function createGenerateLifecycleTasksUseCase(deps: {
 export function createCreateMessageDraftUseCase(deps: {
   tripRepository: TripRepository;
   messageRepository: MessageRepository;
+  /** Optional: when provided, used to render template body with guest first name. */
+  guests?: Array<{ id: string; firstName: string; fullName: string }>;
+  /** Optional: when provided, used to render template body with vehicle nickname. */
+  vehicles?: Vehicle[];
 }): CreateMessageDraftUseCase {
   return {
     async execute(input) {
@@ -859,13 +910,25 @@ export function createCreateMessageDraftUseCase(deps: {
         await deps.messageRepository.saveThreads([thread]);
       }
 
+      const guest = deps.guests?.find((g) => g.id === trip.guestId);
+      const vehicle = deps.vehicles?.find((v) => v.id === trip.vehicleId);
+      const body = renderMessageTemplate({
+        templateKey: input.templateKey,
+        guestFirstName: guest?.firstName ?? guest?.fullName ?? "there",
+        vehicleNickname: vehicle?.nickname ?? trip.vehicleId,
+        externalTripId: trip.externalTripId,
+        pickupAt: trip.pickupAt,
+        returnAt: trip.returnAt,
+        pickupLocation: trip.pickupLocation,
+      });
+
       const draft: MessageDraft = {
         id: stableId(["draft", trip.id, input.templateKey, input.createdAt]),
         threadId: thread.id,
         tripId: trip.id,
         direction: "outbound",
         channel: "turo",
-        body: `Draft for ${input.templateKey} on trip ${trip.externalTripId}.`,
+        body,
         templateKey: input.templateKey,
         approvalStatus: "pending" as ApprovalStatus,
         state: "awaiting_approval",

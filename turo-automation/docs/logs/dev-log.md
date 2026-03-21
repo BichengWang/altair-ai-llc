@@ -235,3 +235,16 @@ Chronological notes on repo setup, architecture decisions, implementation progre
 - Add approval action endpoint (approve/reject a pending message draft)
 - Consider web API route for approval actions backed by Supabase
 - Improve coverage: add test for CSV import guest/vehicle upsert path
+
+### Approval actions wired to web dashboard (Iter 23)
+
+- Updated `web/src/features/OpsDashboard.tsx`:
+  - Added `actOnApproval` import from `../lib/approvalActions`
+  - Per-row approve/reject buttons appear when `approval.status === "pending"` and row not yet actioned
+  - Local `actioningId` + `actionedIds` state prevents double-submission and shows "actioned" pill after success
+  - `onApprovalActioned?` callback prop available for parent to trigger reload
+- Added `web/src/lib/approvalActions.ts` with `actOnApproval(approvalRequestId, decision, reviewedBy)` — noop when Supabase env absent
+
+**Verification**: `npm run build` + `npm test` — 9/9 pass, clean build
+
+**Phase 2 status**: items 1–4 complete; item 5 (templated message bodies) is next
