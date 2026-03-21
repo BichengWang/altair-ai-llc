@@ -7,6 +7,10 @@ import {
   createFixtureContext,
   createGenerateLifecycleTasksUseCase,
   createGetTodayOpsSnapshotUseCase,
+  createImportTripsUseCase,
+  createInMemoryGuestRepository,
+  createInMemoryTripRepository,
+  createInMemoryVehicleRepository,
 } from "../dist/index.js";
 
 test("GetTodayOpsSnapshot returns the typed fixture snapshot", async () => {
@@ -76,4 +80,62 @@ test("DetectLateReturns creates one incident per qualifying overdue trip", async
     result.data.incidentsCreated.map((incident) => incident.tripId).sort(),
     ["trip-tu-1002", "trip-tu-1003"],
   );
+});
+
+test("ImportTrips upserts guests and vehicles when repos are provided", async () => {
+  const tripRepository = createInMemoryTripRepository({ trips: [], tripEvents: [] });
+  const guestRepository = createInMemoryGuestRepository({ guests: [] });
+  const vehicleRepository = createInMemoryVehicleRepository({ vehicles: [] });
+
+  const importSource = {
+    async readTripImportRows() {
+      return [
+        {
+          externalTripId: "TU-9901",
+          guestFullName: "Import Guest",
+          guestEmail: "import@example.com",
+          guestPhone: "+13105559999",
+          vehicleNickname: "Test EV",
+          pickupAt: "2026-04-10T10:00:00.000Z",
+          returnAt: "2026-04-12T10:00:00.000Z",
+          pickupLocation: "Test Location",
+          returnLocation: "Test Location",
+          tripStatus: "upcoming",
+          deliveryRequired: false,
+          tripTotalAmount: 150,
+          source: "test",
+        },
+      ];
+    },
+  };
+
+  const useCase = createImportTripsUseCase({
+    tripImportSource: importSource,
+    tripRepository,
+    guestRepository,
+    vehicleRepository,
+  });
+
+  const result = await useCase.execute({
+    triggeredBy: "test-runner",
+    importedAt: FIXTURE_NOW,
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.data.importedTrips.length, 1);
+
+  // Guest and vehicle should have been upserted
+  const guests = await guestRepository.listGuests();
+  assert.equal(guests.length, 1);
+  assert.equal(guests[0].fullName, "Import Guest");
+  assert.equal(guests[0].email, "import@example.com");
+
+  const vehicles = await vehicleRepository.listVehicles();
+  assert.equal(vehicles.length, 1);
+  assert.equal(vehicles[0].nickname, "Test EV");
+
+  // Trip references the upserted guest and vehicle
+  const trips = await tripRepository.listTrips();
+  assert.equal(trips[0].guestId, guests[0].id);
+  assert.equal(trips[0].vehicleId, vehicles[0].id);
 });
