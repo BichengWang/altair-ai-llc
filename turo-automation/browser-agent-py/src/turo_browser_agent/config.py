@@ -8,12 +8,15 @@ import os
 @dataclass(slots=True)
 class BrowserAgentConfig:
     base_url: str
+    login_url: str
     headless: bool
     default_timeout_ms: int
     slowmo_ms: int
+    bootstrap_wait_ms: int
     storage_state_path: Path
     artifacts_dir: Path
     repo_root: Path
+    browser_channel: str | None
 
 
 
@@ -44,13 +47,19 @@ def read_config() -> BrowserAgentConfig:
             str(repo_root / "artifacts"),
         )
     )
+    base_url = os.getenv("TURO_BASE_URL", "https://turo.com")
+    login_url = os.getenv("TURO_LOGIN_URL", f"{base_url.rstrip('/')}/login")
+    browser_channel = os.getenv("BROWSER_AGENT_BROWSER_CHANNEL") or None
 
     return BrowserAgentConfig(
-        base_url=os.getenv("TURO_BASE_URL", "https://turo.com"),
+        base_url=base_url,
+        login_url=login_url,
         headless=_env_bool("BROWSER_AGENT_HEADLESS", False),
         default_timeout_ms=int(os.getenv("BROWSER_AGENT_TIMEOUT_MS", "15000")),
         slowmo_ms=int(os.getenv("BROWSER_AGENT_SLOWMO_MS", "0")),
+        bootstrap_wait_ms=int(os.getenv("BROWSER_AGENT_BOOTSTRAP_WAIT_MS", "120000")),
         storage_state_path=storage_state_path,
         artifacts_dir=artifacts_dir,
         repo_root=repo_root,
+        browser_channel=browser_channel,
     )

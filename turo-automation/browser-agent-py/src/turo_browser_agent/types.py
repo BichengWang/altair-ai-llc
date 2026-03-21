@@ -26,9 +26,9 @@ def utc_timestamp() -> str:
 
 
 
-def create_result(workflow: str, data: dict[str, Any], warnings: list[str] | None = None) -> BrowserAgentResult:
+def create_result(workflow: str, data: dict[str, Any], warnings: list[str] | None = None, *, ok: bool = True) -> BrowserAgentResult:
     return BrowserAgentResult(
-        ok=True,
+        ok=ok,
         workflow=workflow,
         timestamp=utc_timestamp(),
         data=data,

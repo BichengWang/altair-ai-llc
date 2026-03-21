@@ -18,12 +18,16 @@ This subtree captures the learned browser automation steps as executable command
 - `turo-browser-agent session-check`
 
 The checked-in `./run` wrapper works without installing the package first.
-After `pip install -e .`, the `turo-browser-agent` console script is also available.
+After `python3 -m pip install -e .`, the `turo-browser-agent` console script is also available.
 
 ## Current status
 
-This is a scaffold with executable commands and filesystem/runtime preparation.
-It intentionally stays read-first and documents the next implementation slice instead of pretending the Turo flow is already production-ready.
+This is now a minimal real browser runner:
+- `health-smoke` launches a browser and opens Turo
+- `session-bootstrap` opens the login flow and waits for manual auth
+- `session-check` reuses saved browser state and checks whether the session still looks valid
+
+It still stays read-first and intentionally avoids guest-facing writes.
 
 ## Local dev
 
@@ -31,9 +35,28 @@ It intentionally stays read-first and documents the next implementation slice in
 cd turo-automation/browser-agent-py
 python3 -m venv .venv
 source .venv/bin/activate
-pip install -e .
-turo-browser-agent health-smoke
+python3 -m pip install -e .
+python3 -m playwright install chromium
+./run health-smoke
 ```
+
+If you want to use an installed Chrome instead of Playwright-managed Chromium:
+
+```bash
+export BROWSER_AGENT_BROWSER_CHANNEL=chrome
+```
+
+## Environment variables
+
+- `TURO_BASE_URL` — default `https://turo.com`
+- `TURO_LOGIN_URL` — default `<base>/login`
+- `BROWSER_AGENT_HEADLESS` — default `false`
+- `BROWSER_AGENT_TIMEOUT_MS` — default `15000`
+- `BROWSER_AGENT_SLOWMO_MS` — default `0`
+- `BROWSER_AGENT_BOOTSTRAP_WAIT_MS` — default `120000`
+- `BROWSER_AGENT_BROWSER_CHANNEL` — optional Playwright browser channel (for example `chrome`)
+- `BROWSER_AGENT_STORAGE_STATE_PATH` — default `storage/state.json`
+- `BROWSER_AGENT_ARTIFACTS_DIR` — default `artifacts/`
 
 ## Storage conventions
 
