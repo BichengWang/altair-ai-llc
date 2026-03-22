@@ -465,3 +465,9 @@ Chronological notes on repo setup, architecture decisions, implementation progre
 - Updated browser-agent README to document the more accurate session status contract
 
 **Verification**: `npm test` — 43/43 pass
+
+### Authenticated browser follow-up blocker
+
+- Checked the local repo for `browser-agent/storage/state.json` after publishing PR #69 and confirmed it is missing
+- Stopped before implementing trip-detail or richer authenticated extraction logic because there is no safe way to verify selectors against a logged-in Turo host session yet
+- Updated planning docs so the next step is explicit: bootstrap a browser session, confirm `session:check` returns `authenticated`, then continue read-only extraction work
