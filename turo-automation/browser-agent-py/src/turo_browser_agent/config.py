@@ -17,6 +17,8 @@ class BrowserAgentConfig:
     artifacts_dir: Path
     repo_root: Path
     browser_channel: str | None
+    use_persistent_profile: bool
+    user_data_dir: Path
 
 
 
@@ -50,6 +52,12 @@ def read_config() -> BrowserAgentConfig:
     base_url = os.getenv("TURO_BASE_URL", "https://turo.com")
     login_url = os.getenv("TURO_LOGIN_URL", f"{base_url.rstrip('/')}/login")
     browser_channel = os.getenv("BROWSER_AGENT_BROWSER_CHANNEL") or None
+    user_data_dir = Path(
+        os.getenv(
+            "BROWSER_AGENT_USER_DATA_DIR",
+            str(repo_root / "browser-profile"),
+        )
+    )
 
     return BrowserAgentConfig(
         base_url=base_url,
@@ -62,4 +70,6 @@ def read_config() -> BrowserAgentConfig:
         artifacts_dir=artifacts_dir,
         repo_root=repo_root,
         browser_channel=browser_channel,
+        use_persistent_profile=_env_bool("BROWSER_AGENT_USE_PERSISTENT_PROFILE", False),
+        user_data_dir=user_data_dir,
     )

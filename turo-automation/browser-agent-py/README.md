@@ -22,12 +22,32 @@ After `python3 -m pip install -e .`, the `turo-browser-agent` console script is 
 
 ## Current status
 
-This is now a minimal real browser runner:
+This is a minimal real browser runner:
 - `health-smoke` launches a browser and opens Turo
 - `session-bootstrap` opens the login flow and waits for manual auth
 - `session-check` reuses saved browser state and checks whether the session still looks valid
 
-It still stays read-first and intentionally avoids guest-facing writes.
+It stays read-first and intentionally avoids guest-facing writes.
+
+## Two operating modes
+
+### 1. Ephemeral automation context
+
+Default mode. Uses Playwright browser context plus `storage/state.json`.
+
+### 2. Persistent human-style browser profile
+
+Enable this when you want the agent to reuse a real browser profile directory instead of a fresh automation context:
+
+```bash
+export BROWSER_AGENT_USE_PERSISTENT_PROFILE=true
+export BROWSER_AGENT_USER_DATA_DIR="$PWD/browser-profile"
+export BROWSER_AGENT_BROWSER_CHANNEL=chrome
+./run session-bootstrap
+./run session-check
+```
+
+This is the preferred next path when Turo blocks the default automation context.
 
 ## Local dev
 
@@ -55,10 +75,13 @@ export BROWSER_AGENT_BROWSER_CHANNEL=chrome
 - `BROWSER_AGENT_SLOWMO_MS` — default `0`
 - `BROWSER_AGENT_BOOTSTRAP_WAIT_MS` — default `120000`
 - `BROWSER_AGENT_BROWSER_CHANNEL` — optional Playwright browser channel (for example `chrome`)
+- `BROWSER_AGENT_USE_PERSISTENT_PROFILE` — default `false`
+- `BROWSER_AGENT_USER_DATA_DIR` — default `browser-profile/`
 - `BROWSER_AGENT_STORAGE_STATE_PATH` — default `storage/state.json`
 - `BROWSER_AGENT_ARTIFACTS_DIR` — default `artifacts/`
 
 ## Storage conventions
 
-- `storage/state.json` — persisted browser auth state
+- `storage/state.json` — persisted storage state for ephemeral-context mode
+- `browser-profile/` — persistent user-data-dir for human-style profile mode
 - `artifacts/` — screenshots and debug artifacts

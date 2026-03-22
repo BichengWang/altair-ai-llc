@@ -18,6 +18,7 @@ def prepare_runtime(config: BrowserAgentConfig | None = None) -> dict[str, objec
     cfg = config or read_config()
     ensure_parent_dir(cfg.storage_state_path)
     ensure_dir(cfg.artifacts_dir)
+    ensure_dir(cfg.user_data_dir)
     return {
         "baseUrl": cfg.base_url,
         "loginUrl": cfg.login_url,
@@ -29,6 +30,8 @@ def prepare_runtime(config: BrowserAgentConfig | None = None) -> dict[str, objec
         "artifactsDir": str(cfg.artifacts_dir),
         "repoRoot": str(cfg.repo_root),
         "browserChannel": cfg.browser_channel,
+        "usePersistentProfile": cfg.use_persistent_profile,
+        "userDataDir": str(cfg.user_data_dir),
     }
 
 
@@ -52,13 +55,6 @@ def utc_stamp() -> str:
 def artifact_path(config: BrowserAgentConfig, prefix: str, suffix: str = ".png") -> Path:
     ensure_dir(config.artifacts_dir)
     return config.artifacts_dir / f"{prefix}-{utc_stamp()}{suffix}"
-
-
-
-def save_text_artifact(config: BrowserAgentConfig, prefix: str, content: str) -> str:
-    path = artifact_path(config, prefix, ".txt")
-    path.write_text(content, encoding="utf-8")
-    return str(path)
 
 
 
@@ -92,6 +88,21 @@ def open_browser_page(config: BrowserAgentConfig | None = None, *, storage_state
     cfg = config or read_config()
     sync_playwright = require_playwright()
     with sync_playwright() as playwright:
+        if cfg.use_persistent_profile:
+            context = playwright.chromium.launch_persistent_context(
+                user_data_dir=str(cfg.user_data_dir),
+                **browser_launch_kwargs(cfg),
+            )
+            pages = context.pages
+            page = pages[0] if pages else context.new_page()
+            page.set_default_timeout(cfg.default_timeout_ms)
+            browser = context.browser
+            try:
+                yield browser, context, page
+            finally:
+                context.close()
+            return
+
         browser = playwright.chromium.launch(**browser_launch_kwargs(cfg))
         context_kwargs: dict[str, object] = {}
         if storage_state is not None:

@@ -7,6 +7,9 @@ from ..runtime import BrowserDependencyError, capture_page_artifacts, open_brows
 from ..types import create_result
 
 
+LOGIN_MARKERS = ["log in", "sign up", "continue with google"]
+
+
 
 def run_session_bootstrap():
     config = read_config()
@@ -25,7 +28,7 @@ def run_session_bootstrap():
                 if "you've been blocked" in body_text:
                     status = "blocked"
                     break
-                if all(marker not in body_text for marker in ["log in", "sign up", "continue with google"]):
+                if all(marker not in body_text for marker in LOGIN_MARKERS):
                     authenticated = True
                     status = "authenticated"
                     break
@@ -33,7 +36,7 @@ def run_session_bootstrap():
 
             artifacts = capture_page_artifacts(page, config, "session-bootstrap")
 
-            if authenticated:
+            if authenticated and not config.use_persistent_profile:
                 context.storage_state(path=str(config.storage_state_path))
 
             warnings = None
@@ -50,7 +53,8 @@ def run_session_bootstrap():
                     **runtime,
                     "implemented": True,
                     "status": status,
-                    "storageStateSaved": authenticated,
+                    "storageStateSaved": authenticated and not config.use_persistent_profile,
+                    "persistentProfileReady": authenticated and config.use_persistent_profile,
                     "artifacts": artifacts,
                     "finalUrl": page.url,
                 },

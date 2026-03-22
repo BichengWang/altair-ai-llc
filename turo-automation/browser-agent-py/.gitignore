@@ -3,3 +3,4 @@ __pycache__/
 .venv/
 artifacts/
 storage/*.json
+browser-profile/
