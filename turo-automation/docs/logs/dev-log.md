@@ -456,3 +456,12 @@ Chronological notes on repo setup, architecture decisions, implementation progre
 - Added runtime and trip-extraction tests plus README updates for the new read-only command surface
 
 **Verification**: `npm test` — 39/39 pass
+
+### Live session check classification
+
+- Upgraded `browser-agent/src/flows/sessionCheck.ts` from file-existence only to a live read-only session inspection
+- `session:check` now reports `authenticated`, `stale_state`, `unknown`, or `missing_state`
+- Added injectable inspection path for tests so session classification logic is covered without requiring a live browser login in CI
+- Updated browser-agent README to document the more accurate session status contract
+
+**Verification**: `npm test` — 43/43 pass

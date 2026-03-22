@@ -1,8 +1,12 @@
 export interface SessionCheckData {
   implemented: boolean;
   stateFileExists: boolean;
-  status: 'missing_state' | 'ready_for_browser_check';
+  usingStorageState: boolean;
+  status: 'missing_state' | 'authenticated' | 'stale_state' | 'unknown';
   storageStatePath: string;
+  pageKind: 'authenticated' | 'unauthenticated' | 'unknown';
+  pageTitle: string | null;
+  finalUrl: string | null;
 }
 
 export interface SessionBootstrapData {
