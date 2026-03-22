@@ -29,7 +29,7 @@ This is a minimal real browser runner:
 
 It stays read-first and intentionally avoids guest-facing writes.
 
-## Two operating modes
+## Three operating modes
 
 ### 1. Ephemeral automation context
 
@@ -48,6 +48,27 @@ export BROWSER_AGENT_BROWSER_CHANNEL=chrome
 ```
 
 This is the preferred next path when Turo blocks the default automation context.
+
+### 3. CDP attach to an already-open Chrome session
+
+This is the most critical unblocker path when Turo behaves differently in a real user browser than in a freshly launched automated one.
+
+Start Chrome with a remote debugging port, then attach the agent to it:
+
+```bash
+"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
+  --remote-debugging-port=9222 \
+  --user-data-dir="$PWD/browser-profile-cdp" \
+  --no-first-run \
+  --no-default-browser-check \
+  about:blank
+
+export BROWSER_AGENT_USE_CDP_ATTACH=true
+export BROWSER_AGENT_CDP_URL=http://127.0.0.1:9222
+./run health-smoke
+./run session-bootstrap
+./run session-check
+```
 
 ## Local dev
 
@@ -77,6 +98,8 @@ export BROWSER_AGENT_BROWSER_CHANNEL=chrome
 - `BROWSER_AGENT_BROWSER_CHANNEL` — optional Playwright browser channel (for example `chrome`)
 - `BROWSER_AGENT_USE_PERSISTENT_PROFILE` — default `false`
 - `BROWSER_AGENT_USER_DATA_DIR` — default `browser-profile/`
+- `BROWSER_AGENT_USE_CDP_ATTACH` — default `false`
+- `BROWSER_AGENT_CDP_URL` — example `http://127.0.0.1:9222`
 - `BROWSER_AGENT_STORAGE_STATE_PATH` — default `storage/state.json`
 - `BROWSER_AGENT_ARTIFACTS_DIR` — default `artifacts/`
 

@@ -13,7 +13,7 @@ def run_session_check():
     config = read_config()
     state_exists = config.storage_state_path.exists()
 
-    if not config.use_persistent_profile and not state_exists:
+    if not config.use_persistent_profile and not config.use_cdp_attach and not state_exists:
         return create_result(
             "session:check",
             {
@@ -58,6 +58,7 @@ def run_session_check():
                     "implemented": True,
                     "stateFileExists": state_exists,
                     "usingPersistentProfile": config.use_persistent_profile,
+                    "usingCdpAttach": config.use_cdp_attach,
                     "status": status,
                     "storageStatePath": str(config.storage_state_path),
                     "userDataDir": str(config.user_data_dir),

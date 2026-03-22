@@ -32,6 +32,8 @@ def prepare_runtime(config: BrowserAgentConfig | None = None) -> dict[str, objec
         "browserChannel": cfg.browser_channel,
         "usePersistentProfile": cfg.use_persistent_profile,
         "userDataDir": str(cfg.user_data_dir),
+        "useCdpAttach": cfg.use_cdp_attach,
+        "cdpUrl": cfg.cdp_url,
     }
 
 
@@ -88,6 +90,23 @@ def open_browser_page(config: BrowserAgentConfig | None = None, *, storage_state
     cfg = config or read_config()
     sync_playwright = require_playwright()
     with sync_playwright() as playwright:
+        if cfg.use_cdp_attach:
+            if not cfg.cdp_url:
+                raise BrowserDependencyError(
+                    "CDP attach mode requires BROWSER_AGENT_CDP_URL, for example http://127.0.0.1:9222"
+                )
+            browser = playwright.chromium.connect_over_cdp(cfg.cdp_url)
+            contexts = browser.contexts
+            context = contexts[0] if contexts else browser.new_context()
+            pages = context.pages
+            page = pages[0] if pages else context.new_page()
+            page.set_default_timeout(cfg.default_timeout_ms)
+            try:
+                yield browser, context, page
+            finally:
+                browser.close()
+            return
+
         if cfg.use_persistent_profile:
             context = playwright.chromium.launch_persistent_context(
                 user_data_dir=str(cfg.user_data_dir),
