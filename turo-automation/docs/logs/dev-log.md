@@ -471,3 +471,11 @@ Chronological notes on repo setup, architecture decisions, implementation progre
 - Checked the local repo for `browser-agent/storage/state.json` after publishing PR #69 and confirmed it is missing
 - Stopped before implementing trip-detail or richer authenticated extraction logic because there is no safe way to verify selectors against a logged-in Turo host session yet
 - Updated planning docs so the next step is explicit: bootstrap a browser session, confirm `session:check` returns `authenticated`, then continue read-only extraction work
+
+### Browser blocker docs sync (Iter 1 of rerun)
+
+- Synced `main` after PR #69 merged and re-verified that `browser-agent/storage/state.json` is still absent locally
+- Cleaned `docs/planning/daily-plan.md` so the current objective and next-step guidance point directly at the authenticated session bootstrap blocker
+- Stopped the rerun after this docs iteration because the next implementation slice depends on a real logged-in browser session and cannot be safely verified without it
+
+**Verification**: `test -f browser-agent/storage/state.json && echo STATE_PRESENT || echo STATE_MISSING` → `STATE_MISSING`
