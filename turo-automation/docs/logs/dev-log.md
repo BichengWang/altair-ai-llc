@@ -479,3 +479,16 @@ Chronological notes on repo setup, architecture decisions, implementation progre
 - Stopped the rerun after this docs iteration because the next implementation slice depends on a real logged-in browser session and cannot be safely verified without it
 
 **Verification**: `test -f browser-agent/storage/state.json && echo STATE_PRESENT || echo STATE_MISSING` → `STATE_MISSING`
+
+### Protected-route session check correction
+
+- Updated `browser-agent-py/run` to prefer the repo-local `.venv/bin/python` when present so the checked-in wrapper can actually reuse the installed Playwright dependency during local verification
+- Tightened `browser-agent-py` `session-check` so it verifies the protected host trips route instead of the public Turo homepage
+- Added `checkedUrl` to the `session-check` JSON payload so the verification target is explicit in artifacts/output
+- Updated browser-agent docs and the daily plan to reflect the corrected definition of an authenticated session
+- Re-verified the current supposedly unblocked state and found it still redirects protected host routes to `/login`, so the browser follow-up remains blocked on a truly host-authenticated session
+
+**Verification**:
+- `./run session-check` → `status: login_required`, `checkedUrl: https://turo.com/us/en/trips`, final URL redirects to `/login`
+- `BROWSER_AGENT_USE_CDP_ATTACH=true BROWSER_AGENT_CDP_URL=http://127.0.0.1:9222 ./run session-check` → still redirects protected route to `/login`
+- `BROWSER_AGENT_USE_CDP_ATTACH=true BROWSER_AGENT_CDP_URL=http://127.0.0.1:9222 .venv/bin/python /tmp/check_host.py` → public host-tools page loads, but protected `/us/en/trips` and `/us/en/account` routes redirect to login

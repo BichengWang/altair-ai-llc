@@ -6,7 +6,7 @@ Use this file for the current working plan. Keep it short, current, and actionab
 2026-03-22
 
 ## Objective
-Unblock authenticated browser-agent validation so the next read-only extraction slice can be verified safely.
+Verify authenticated browser-agent validation against a protected host route so the next read-only extraction slice can be verified safely.
 
 ## Completed
 - [x] Shared domain, ports, fixtures, and use-case contracts
@@ -42,7 +42,7 @@ Unblock authenticated browser-agent validation so the next read-only extraction 
 - Should incident actions remain direct Supabase client calls from the web, or move behind a worker/API boundary later?
 - What actor identity should own `reviewedBy` and incident `ownerId` in production?
 - When does an approved message draft actually get sent on the guest-facing channel?
-- Browser-agent authenticated follow-up remains blocked until `browser-agent/storage/state.json` exists and `session:check` confirms `authenticated`.
+- Browser-agent authenticated follow-up remains blocked until a protected host route loads without redirecting to `/login`; a public-homepage-only `session:check` is not sufficient.
 
 ## Next Suggested Step
-Run `browser-agent` session bootstrap to create `browser-agent/storage/state.json`, then verify `session:check` returns `authenticated` before extending `trips:list` selector coverage or adding a trip-detail read model.
+Re-bootstrap or re-attach the browser-agent against a real host-authenticated session, then verify `session:check` succeeds on the protected trips route before extending `trips:list` selector coverage or adding a trip-detail read model.
