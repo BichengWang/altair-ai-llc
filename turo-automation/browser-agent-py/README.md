@@ -13,9 +13,11 @@ This subtree captures the learned browser automation steps as executable command
 - `./run health-smoke`
 - `./run session-bootstrap`
 - `./run session-check`
+- `./run trips-list`
 - `turo-browser-agent health-smoke`
 - `turo-browser-agent session-bootstrap`
 - `turo-browser-agent session-check`
+- `turo-browser-agent trips-list`
 
 The checked-in `./run` wrapper works without installing the package first.
 After `python3 -m pip install -e .`, the `turo-browser-agent` console script is also available.
@@ -26,6 +28,7 @@ This is a minimal real browser runner:
 - `health-smoke` launches a browser and opens Turo
 - `session-bootstrap` opens the login flow and waits for manual auth
 - `session-check` reuses saved browser state and checks whether the session still looks valid
+- `trips-list` opens the host trips page and returns structured JSON or `login_required`
 
 It stays read-first and intentionally avoids guest-facing writes.
 

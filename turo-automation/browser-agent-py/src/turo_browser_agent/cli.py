@@ -6,11 +6,13 @@ import sys
 from .flows.health_smoke import run_health_smoke
 from .flows.session_bootstrap import run_session_bootstrap
 from .flows.session_check import run_session_check
+from .flows.trips_list import run_trips_list
 
 COMMANDS = {
     "health-smoke": run_health_smoke,
     "session-bootstrap": run_session_bootstrap,
     "session-check": run_session_check,
+    "trips-list": run_trips_list,
 }
 
 
