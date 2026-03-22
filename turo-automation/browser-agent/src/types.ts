@@ -12,3 +12,23 @@ export interface SessionBootstrapData {
   artifactsDir: string;
   next: string[];
 }
+
+export interface TripListItem {
+  id: string;
+  href: string;
+  label: string;
+}
+
+export interface TripListData {
+  implemented: boolean;
+  baseUrl: string;
+  tripsUrl: string;
+  storageStatePath: string;
+  hasStateFile: boolean;
+  usingStorageState: boolean;
+  pageKind: 'authenticated' | 'unauthenticated' | 'unknown';
+  pageTitle: string;
+  finalUrl: string;
+  count: number;
+  trips: TripListItem[];
+}
